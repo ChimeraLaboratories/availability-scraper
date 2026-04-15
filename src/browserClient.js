@@ -49,18 +49,6 @@ export async function closeBrowser() {
     page = null;
 }
 
-export async function openBrowserSession() {
-    const { page } = await ensureBrowser();
-
-    await page.bringToFront();
-    await page.waitForLoadState("domcontentloaded");
-
-    return {
-        url: page.url(),
-        message: "Browser opened.",
-    };
-}
-
 export async function getBrowserStatus() {
     if (!page) {
         return {
