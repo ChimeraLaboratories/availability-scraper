@@ -5,8 +5,7 @@ import { fileURLToPath } from "url";
 import {
     ensureBrowser,
     getExistingBrowser,
-    openBrowserSession,
-    closeBrowser,
+    fetchAvailabilityInBrowser,
     saveBrowserState,
     getBrowserStatus,
 } from "./browserClient.js";
