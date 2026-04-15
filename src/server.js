@@ -113,21 +113,14 @@ app.get("/api/dashboard", async (req, res) => {
                 });
 
                 const filtered = filterAvailability(raw, category.filters);
-
                 const firstDay = filtered[0] || null;
                 const firstSlot = firstDay?.appointmentSlots?.[0] || null;
-
-                const formatted = formatDateTime(
-                    firstDay?.date,
-                    firstSlot?.startTime
-                );
 
                 results.push({
                     key: category.key,
                     label: category.label,
                     lineOfBusiness: category.lineOfBusiness,
                     slotType: category.slotType,
-                    nextAvailable: formatted,
                     nextAvailableDate: firstDay?.date || null,
                     nextAvailableTime: firstSlot?.startTime || null,
                     totalDays: filtered.length,
@@ -144,7 +137,6 @@ app.get("/api/dashboard", async (req, res) => {
                     lineOfBusiness: category.lineOfBusiness,
                     slotType: category.slotType,
                     error: error.message || "Unknown error",
-                    nextAvailable: null,
                     nextAvailableDate: null,
                     nextAvailableTime: null,
                     totalDays: 0,
@@ -154,13 +146,14 @@ app.get("/api/dashboard", async (req, res) => {
             }
         }
 
-        const nextAvailableOverall = results
-            .filter((r) => r.nextAvailableDate && r.nextAvailableTime)
-            .sort((a, b) => {
-                const aValue = `${a.nextAvailableDate}T${a.nextAvailableTime}`;
-                const bValue = `${b.nextAvailableDate}T${b.nextAvailableTime}`;
-                return aValue.localeCompare(bValue);
-            })[0] || null;
+        const nextAvailableOverall =
+            results
+                .filter((r) => r.nextAvailableDate && r.nextAvailableTime)
+                .sort((a, b) => {
+                    const aValue = `${a.nextAvailableDate}T${a.nextAvailableTime}`;
+                    const bValue = `${b.nextAvailableDate}T${b.nextAvailableTime}`;
+                    return aValue.localeCompare(bValue);
+                })[0] || null;
 
         res.json({
             storeNumber,

@@ -2,7 +2,6 @@ const statusEl = document.getElementById("status");
 const nextEl = document.getElementById("nextAvailable");
 const listEl = document.getElementById("list");
 
-const openBrowserBtn = document.getElementById("openBrowserBtn");
 const refreshBtn = document.getElementById("refreshBtn");
 
 function setStatus(text, variant = "idle") {
@@ -97,26 +96,6 @@ function renderCategories(categories) {
         })
         .join("");
 }
-
-async function openBrowserSession() {
-    try {
-        setStatus("Opening browser...", "loading");
-        const response = await fetch("/api/open-browser");
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || "Failed to open browser");
-        }
-
-        setStatus("Browser ready", "success");
-        return data;
-    } catch (error) {
-        console.error(error);
-        setStatus("Browser error", "error");
-        throw error;
-    }
-}
-
 async function loadDashboard() {
     try {
         setStatus("Loading availability...", "loading");
@@ -136,14 +115,6 @@ async function loadDashboard() {
         setStatus("Load failed", "error");
     }
 }
-
-openBrowserBtn.addEventListener("click", async () => {
-    try {
-        await openBrowserSession();
-    } catch {
-        // already handled in UI
-    }
-});
 
 refreshBtn.addEventListener("click", async () => {
     await loadDashboard();
