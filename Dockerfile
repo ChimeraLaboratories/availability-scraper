@@ -22,7 +22,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 RUN npx playwright install chromium
 
 ENV DISPLAY=:99
-ENV PORT=3001
+ENV PORT=3004
 ENV BROWSER_PROFILE_DIR=/app/data/browser-profile
 
 RUN mkdir -p /app/data/browser-profile
