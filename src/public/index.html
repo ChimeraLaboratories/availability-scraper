@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Availability Scraper</title>
+    <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+<main class="container">
+    <h1>Specsavers Availability</h1>
+
+    <form id="form" class="card">
+        <label>
+            Store number
+            <input type="text" id="storeNumber" value="8" />
+        </label>
+
+        <label>
+            Slot type
+            <input type="text" id="slotType" value="OCT_SCAN" />
+        </label>
+
+        <label>
+            Start date
+            <input type="date" id="startDate" />
+        </label>
+
+        <label>
+            Max number of days
+            <input type="number" id="maxNumberOfDays" value="42" min="1" max="90" />
+        </label>
+
+        <label>
+            After time
+            <input type="time" id="afterTime" />
+        </label>
+
+        <label>
+            Before time
+            <input type="time" id="beforeTime" />
+        </label>
+
+        <label class="checkbox">
+            <input type="checkbox" id="weekdaysOnly" />
+            Weekdays only
+        </label>
+
+        <label class="checkbox">
+            <input type="checkbox" id="weekendsOnly" />
+            Weekends only
+        </label>
+
+        <button type="submit">Check availability</button>
+    </form>
+
+    <section id="status"></section>
+    <section id="results" class="results"></section>
+</main>
+
+<script src="/app.js"></script>
+</body>
+</html>
