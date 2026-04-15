@@ -29,47 +29,6 @@ async function safeCurrentUrl(page) {
     }
 }
 
-async function handleCookies(page) {
-    try {
-        await page.waitForTimeout(1500);
-
-        // 1. Try normal click
-        const btn = page.getByRole("button", { name: /accept/i });
-
-        if (await btn.count()) {
-            await btn.first().click({ force: true });
-            console.log("Cookies accepted (role)");
-            return;
-        }
-
-        // 2. Brutal fallback: remove overlay + click anything that looks like accept
-        await page.evaluate(() => {
-            // Remove dark overlay
-            const overlays = document.querySelectorAll(
-                '[style*="position: fixed"], .ReactModal__Overlay, .modal, [role="dialog"]'
-            );
-            overlays.forEach(el => el.remove());
-
-            // Re-enable scrolling
-            document.body.style.overflow = "auto";
-            document.documentElement.style.overflow = "auto";
-
-            // Click accept buttons
-            const buttons = [...document.querySelectorAll("button")];
-            const accept = buttons.find(b =>
-                /accept/i.test((b.innerText || "").toLowerCase())
-            );
-
-            if (accept) accept.click();
-        });
-
-        console.log("Cookies handled via force DOM");
-
-    } catch (err) {
-        console.log("Cookie handling failed:", err.message);
-    }
-}
-
 app.get("/api/open-browser", async (req, res) => {
     try {
         const page = await ensureBrowser();
@@ -77,8 +36,6 @@ app.get("/api/open-browser", async (req, res) => {
         if ((await safeCurrentUrl(page)) === "about:blank") {
             await page.bringToFront();
         }
-
-        await handleCookies(page);
 
         res.json({
             ok: true,
@@ -99,7 +56,6 @@ app.get("/api/continue", async (req, res) => {
 
         await page.bringToFront();
         await page.waitForLoadState("domcontentloaded");
-        await handleCookies(page);
 
         res.json({
             ok: true,
@@ -280,7 +236,6 @@ app.get("/api/search-location", async (req, res) => {
 
         await page.bringToFront();
         await page.waitForLoadState("domcontentloaded");
-        await handleCookies(page);
 
         const input = page.locator('input[type="text"]').first();
         await input.waitFor({ timeout: 15000 });
@@ -288,7 +243,6 @@ app.get("/api/search-location", async (req, res) => {
         await input.press("Enter");
 
         await page.waitForLoadState("domcontentloaded");
-        await handleCookies(page);
 
         res.json({
             ok: true,
