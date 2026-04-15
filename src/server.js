@@ -33,42 +33,40 @@ async function handleCookies(page) {
     try {
         await page.waitForTimeout(1500);
 
-        const acceptButton = page.getByRole("button", {
-            name: /accept( all)? cookies|accept all/i,
-        });
+        // 1. Try normal click
+        const btn = page.getByRole("button", { name: /accept/i });
 
-        if (await acceptButton.count()) {
-            await acceptButton.first().click({ force: true, timeout: 5000 });
-            console.log("Cookies accepted via role selector");
-            return { ok: true, method: "role-selector" };
+        if (await btn.count()) {
+            await btn.first().click({ force: true });
+            console.log("Cookies accepted (role)");
+            return;
         }
 
-        const clickedInDom = await page.evaluate(() => {
-            const buttons = Array.from(document.querySelectorAll("button"));
-            const button = buttons.find((b) =>
-                /accept( all)? cookies|accept all/i.test(
-                    (b.innerText || b.textContent || "").trim()
-                )
+        // 2. Brutal fallback: remove overlay + click anything that looks like accept
+        await page.evaluate(() => {
+            // Remove dark overlay
+            const overlays = document.querySelectorAll(
+                '[style*="position: fixed"], .ReactModal__Overlay, .modal, [role="dialog"]'
+            );
+            overlays.forEach(el => el.remove());
+
+            // Re-enable scrolling
+            document.body.style.overflow = "auto";
+            document.documentElement.style.overflow = "auto";
+
+            // Click accept buttons
+            const buttons = [...document.querySelectorAll("button")];
+            const accept = buttons.find(b =>
+                /accept/i.test((b.innerText || "").toLowerCase())
             );
 
-            if (button) {
-                button.click();
-                return true;
-            }
-
-            return false;
+            if (accept) accept.click();
         });
 
-        if (clickedInDom) {
-            console.log("Cookies accepted via DOM fallback");
-            return { ok: true, method: "dom-fallback" };
-        }
+        console.log("Cookies handled via force DOM");
 
-        console.log("No cookie accept button found");
-        return { ok: false, method: "not-found" };
-    } catch (error) {
-        console.log("Cookie accept failed:", error.message);
-        return { ok: false, method: "error", error: error.message };
+    } catch (err) {
+        console.log("Cookie handling failed:", err.message);
     }
 }
 
