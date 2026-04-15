@@ -3,29 +3,25 @@ import { chromium } from "playwright";
 let context;
 let page;
 
-const EDGE_USER_DATA_DIR =
-    "C:\\Users\\CaneE\\AppData\\Local\\Microsoft\\Edge\\User Data\\Default";
+const USER_DATA_DIR = "C:\\temp\\availability-edge-profile";
 
 async function ensureBrowser() {
     if (context && page) {
         return page;
     }
 
-    context = await chromium.launchPersistentContext(EDGE_USER_DATA_DIR, {
+    context = await chromium.launchPersistentContext(USER_DATA_DIR, {
         channel: "msedge",
         headless: false,
-        slowMo: 150,
         viewport: null,
+        locale: "en-GB",
         args: [
             "--disable-blink-features=AutomationControlled",
         ],
-        locale: "en-GB",
-        userAgent:
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0",
     });
 
-    const existingPages = context.pages();
-    page = existingPages.length ? existingPages[0] : await context.newPage();
+    const pages = context.pages();
+    page = pages.length ? pages[0] : await context.newPage();
 
     await page.goto("https://www.specsavers.co.uk/book/location", {
         waitUntil: "domcontentloaded",
@@ -40,57 +36,21 @@ export async function openBrowserSession() {
     await page.bringToFront();
     await page.waitForLoadState("domcontentloaded");
 
-    const acceptCookies = page.getByRole("button", { name: /accept all cookies/i });
-    if (await acceptCookies.isVisible().catch(() => false)) {
-        await acceptCookies.click();
-        await page.waitForTimeout(1000);
-    }
-
     return {
         url: page.url(),
-        message:
-            "Browser opened using your Edge profile. In the Edge window, complete the Specsavers flow until you reach the date-and-time page, then use Check availability.",
+        message: "Browser opened.",
     };
 }
 
 export async function getBrowserStatus() {
-    const page = await ensureBrowser();
-    const url = page.url();
+    if (!page) {
+        return { url: null, ready: false };
+    }
 
     return {
-        url,
-        ready: url.includes("/date-and-time"),
+        url: page.url(),
+        ready: true,
     };
-}
-
-function buildAvailabilityQuery() {
-    return `
-    query GetAvailableAppointmentSlots(
-      $storeNumbers: [String!]!,
-      $slotsQuery: AvailableSlotsQueryInput!,
-      $lineOfBusiness: LineOfBusiness!
-    ) {
-      storeAppointmentSlots(
-        storeNumbers: $storeNumbers
-        lineOfBusiness: $lineOfBusiness
-      ) {
-        availableSlots(query: $slotsQuery) {
-          date
-          count
-          appointmentSlots {
-            id
-            clinicId
-            slotType
-            startTime
-            endTime
-            __typename
-          }
-          __typename
-        }
-        __typename
-      }
-    }
-  `;
 }
 
 export async function fetchAvailabilityInBrowser({
@@ -102,27 +62,45 @@ export async function fetchAvailabilityInBrowser({
                                                  }) {
     const page = await ensureBrowser();
 
-    const url = page.url();
-
-    if (!url.includes("/date-and-time")) {
-        throw new Error(
-            `Browser not ready.\nCurrent URL: ${url}\n\nPlease do this in the opened Edge window:\n- Accept cookies\n- Select store (Peterborough Bridge Street)\n- Choose appointment type\n- Enter DOB\n- Continue until you are on the date-and-time page\nThen try again.`
-        );
-    }
-
     const result = await page.evaluate(
-        async ({ storeNumber, slotType, startDate, maxNumberOfDays, lineOfBusiness, query }) => {
-            const response = await fetch("https://www.specsavers.co.uk/graphql", {
+        async ({ storeNumber, slotType, startDate, maxNumberOfDays, lineOfBusiness }) => {
+            const query = `
+                query GetAvailableAppointmentSlots(
+                    $storeNumbers: [String!]!,
+                    $slotsQuery: AvailableSlotsQueryInput!,
+                    $lineOfBusiness: LineOfBusiness!
+                ) {
+                    storeAppointmentSlots(
+                        storeNumbers: $storeNumbers
+                        lineOfBusiness: $lineOfBusiness
+                    ) {
+                        availableSlots(query: $slotsQuery) {
+                            date
+                            count
+                            appointmentSlots {
+                                id
+                                clinicId
+                                slotType
+                                startTime
+                                endTime
+                                __typename
+                            }
+                            __typename
+                        }
+                        __typename
+                    }
+                }
+            `;
+
+            const response = await fetch("/graphql", {
                 method: "POST",
-                credentials: "include",
                 headers: {
-                    "Accept": "*/*",
-                    "Content-Type": "application/json",
+                    "content-type": "application/json",
+                    accept: "*/*",
                     "apollographql-client-name": "nuxt-find-and-book",
                     "apollographql-client-version": "1.1219.0",
                     "x-specsavers-application-id": "nuxt-find-and-book/1.1219.0",
                     "x-specsavers-market-id": "GB",
-                    "x-correlation-id": crypto.randomUUID(),
                 },
                 body: JSON.stringify({
                     operationName: "GetAvailableAppointmentSlots",
@@ -137,6 +115,7 @@ export async function fetchAvailabilityInBrowser({
                         storeNumbers: [String(storeNumber)],
                     },
                 }),
+                credentials: "include",
             });
 
             const text = await response.text();
@@ -153,7 +132,6 @@ export async function fetchAvailabilityInBrowser({
             startDate,
             maxNumberOfDays,
             lineOfBusiness,
-            query: buildAvailabilityQuery(),
         }
     );
 
@@ -162,19 +140,7 @@ export async function fetchAvailabilityInBrowser({
     }
 
     const json = JSON.parse(result.text);
-    const days = json?.data?.storeAppointmentSlots?.[0]?.availableSlots ?? [];
-
-    return days.map((day) => ({
-        date: day.date,
-        count: day.count,
-        appointmentSlots: (day.appointmentSlots ?? []).map((slot) => ({
-            id: slot.id,
-            clinicId: slot.clinicId ?? null,
-            slotType: slot.slotType,
-            startTime: slot.startTime,
-            endTime: slot.endTime ?? null,
-        })),
-    }));
+    return json?.data?.storeAppointmentSlots?.[0]?.availableSlots ?? [];
 }
 
 export function filterAvailability(days, filters = {}) {
@@ -185,7 +151,7 @@ export function filterAvailability(days, filters = {}) {
         beforeTime,
     } = filters;
 
-    return days
+    return (days || [])
         .map((day) => {
             const dateObj = new Date(`${day.date}T00:00:00`);
             const jsDay = dateObj.getDay();
@@ -194,7 +160,7 @@ export function filterAvailability(days, filters = {}) {
             if (weekendsOnly && !isWeekend) return null;
             if (weekdaysOnly && isWeekend) return null;
 
-            let slots = [...day.appointmentSlots];
+            let slots = [...(day.appointmentSlots || [])];
 
             if (afterTime) {
                 slots = slots.filter((s) => s.startTime >= afterTime);
