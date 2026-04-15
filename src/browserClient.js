@@ -28,20 +28,13 @@ export async function ensureBrowser() {
     browserContext = await chromium.launchPersistentContext(PROFILE_DIR, {
         headless: false,
         channel: "chromium",
-        viewport: { width: 1920, height: 1080 },
+        viewport: { width: 1280, height: 720 },
         ignoreHTTPSErrors: true,
         args: [
-            "--start-maximized",
             "--disable-blink-features=AutomationControlled",
             "--no-sandbox",
             "--disable-dev-shm-usage",
         ],
-    });
-
-    await browserContext.addInitScript(() => {
-        Object.defineProperty(navigator, "cookieEnabled", {
-            get: () => true,
-        });
     });
 
     const pages = browserContext.pages();
