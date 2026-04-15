@@ -8,7 +8,6 @@ RUN npm install
 COPY . .
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    firefox \
     xvfb \
     fluxbox \
     x11vnc \
@@ -20,7 +19,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     tzdata \
  && rm -rf /var/lib/apt/lists/*
 
-RUN npx playwright install firefox
+RUN npx playwright install chromium
 
 ENV DISPLAY=:99
 ENV PORT=3001

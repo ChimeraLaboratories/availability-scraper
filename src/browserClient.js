@@ -1,65 +1,116 @@
-import { firefox } from "playwright";
+import { chromium } from "playwright";
 import fs from "fs/promises";
+import path from "path";
 
-let context;
-let page;
+let browserContext = null;
+let page = null;
 
-function looksBlocked(url = "", title = "") {
+const PROFILE_DIR =
+    process.env.BROWSER_PROFILE_DIR || path.resolve("data/browser-profile");
+
+function looksBlocked(url, title) {
     return /challenge|verify|captcha|cloudflare/i.test(`${url} ${title}`);
 }
 
+async function ensureProfileDir() {
+    await fs.mkdir(PROFILE_DIR, { recursive: true });
+}
+
 export async function ensureBrowser() {
-    if (context) {
-        const pages = context.pages();
-        page = pages[0] ?? page ?? null;
-        if (page) return page;
+    if (browserContext) {
+        const pages = browserContext.pages();
+        page = pages[0] || page || (await browserContext.newPage());
+        return page;
     }
 
-    context = await firefox.launchPersistentContext("/app/.auth/firefox-profile", {
+    await ensureProfileDir();
+
+    browserContext = await chromium.launchPersistentContext(PROFILE_DIR, {
         headless: false,
-        slowMo: 200,
+        channel: "chromium",
         viewport: { width: 1920, height: 1080 },
+        ignoreHTTPSErrors: true,
+        args: [
+            "--start-maximized",
+            "--disable-blink-features=AutomationControlled",
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+        ],
     });
 
-    page = context.pages()[0] ?? await context.newPage();
-    await page.bringToFront();
+    const pages = browserContext.pages();
+    page = pages[0] || (await browserContext.newPage());
 
     return page;
 }
 
 export async function openBrowserSession() {
-    const page = await ensureBrowser();
-    await page.bringToFront();
+    const currentPage = await ensureBrowser();
+    await currentPage.bringToFront();
 
     return {
         ok: true,
-        url: page.url(),
-        title: await page.title().catch(() => ""),
+        url: currentPage.url(),
+        message: "Browser session is open.",
     };
 }
 
 export function getExistingBrowser() {
-    if (!context) return null;
+    if (!browserContext) return null;
 
-    const pages = context.pages();
+    const pages = browserContext.pages();
+
     return {
-        context,
-        page: pages[0] ?? page ?? null,
+        context: browserContext,
+        page: pages[0] || page || null,
     };
 }
 
-export async function saveBrowserState() {
-    if (!context) return { ok: false, error: "No browser context" };
+export async function closeBrowser() {
+    if (browserContext) {
+        await browserContext.close();
+    }
 
-    await context.storageState({ path: "/app/.auth/storage-state.json" });
+    browserContext = null;
+    page = null;
 
     return { ok: true };
 }
 
-export async function closeBrowser() {
-    if (context) {
-        await context.close();
+export async function saveBrowserState() {
+    if (!browserContext) {
+        return { ok: false, error: "Browser is not open." };
     }
-    context = null;
-    page = null;
+
+    await browserContext.storageState({
+        path: path.join(PROFILE_DIR, "storage-state.json"),
+    });
+
+    return { ok: true };
+}
+
+export async function getBrowserStatus() {
+    const existing = getExistingBrowser();
+
+    if (!existing?.page) {
+        return {
+            ok: true,
+            browserOpen: false,
+            needsManualVerification: true,
+            message: "Browser not open yet.",
+        };
+    }
+
+    const currentPage = existing.page;
+    const url = currentPage.url();
+    const title = await currentPage.title();
+
+    return {
+        ok: true,
+        browserOpen: true,
+        url,
+        title,
+        needsManualVerification: looksBlocked(url, title),
+        message: "Browser session is open.",
+    };
 }
