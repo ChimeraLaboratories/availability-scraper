@@ -21,18 +21,71 @@ const __dirname = path.dirname(__filename);
 
 app.use(express.static(path.join(__dirname, "public")));
 
+async function safeCurrentUrl(page) {
+    try {
+        return page?.url?.() || "about:blank";
+    } catch {
+        return "about:blank";
+    }
+}
+
+async function handleCookies(page) {
+    try {
+        await page.waitForTimeout(1500);
+
+        const acceptButton = page.getByRole("button", {
+            name: /accept( all)? cookies|accept all/i,
+        });
+
+        if (await acceptButton.count()) {
+            await acceptButton.first().click({ force: true, timeout: 5000 });
+            console.log("Cookies accepted via role selector");
+            return { ok: true, method: "role-selector" };
+        }
+
+        const clickedInDom = await page.evaluate(() => {
+            const buttons = Array.from(document.querySelectorAll("button"));
+            const button = buttons.find((b) =>
+                /accept( all)? cookies|accept all/i.test(
+                    (b.innerText || b.textContent || "").trim()
+                )
+            );
+
+            if (button) {
+                button.click();
+                return true;
+            }
+
+            return false;
+        });
+
+        if (clickedInDom) {
+            console.log("Cookies accepted via DOM fallback");
+            return { ok: true, method: "dom-fallback" };
+        }
+
+        console.log("No cookie accept button found");
+        return { ok: false, method: "not-found" };
+    } catch (error) {
+        console.log("Cookie accept failed:", error.message);
+        return { ok: false, method: "error", error: error.message };
+    }
+}
+
 app.get("/api/open-browser", async (req, res) => {
     try {
         const page = await ensureBrowser();
 
-        if (page.url() === "about:blank") {
+        if ((await safeCurrentUrl(page)) === "about:blank") {
             await page.bringToFront();
         }
+
+        await handleCookies(page);
 
         res.json({
             ok: true,
             message: "Browser opened. Use noVNC to navigate manually.",
-            url: page.url(),
+            url: await safeCurrentUrl(page),
         });
     } catch (error) {
         res.status(500).json({
@@ -48,10 +101,11 @@ app.get("/api/continue", async (req, res) => {
 
         await page.bringToFront();
         await page.waitForLoadState("domcontentloaded");
+        await handleCookies(page);
 
         res.json({
             ok: true,
-            url: page.url(),
+            url: await safeCurrentUrl(page),
             message: "Session is ready. Continue with search from the existing verified browser.",
         });
     } catch (error) {
@@ -228,19 +282,20 @@ app.get("/api/search-location", async (req, res) => {
 
         await page.bringToFront();
         await page.waitForLoadState("domcontentloaded");
+        await handleCookies(page);
 
-        // You may need to adjust selectors for the live page
         const input = page.locator('input[type="text"]').first();
         await input.waitFor({ timeout: 15000 });
         await input.fill(location);
         await input.press("Enter");
 
         await page.waitForLoadState("domcontentloaded");
+        await handleCookies(page);
 
         res.json({
             ok: true,
             message: `Search submitted for ${location}`,
-            url: page.url(),
+            url: await safeCurrentUrl(page),
         });
     } catch (error) {
         res.status(500).json({
@@ -269,9 +324,11 @@ app.get("/api/go-to-site", async (req, res) => {
             timeout: 60000,
         });
 
+        await handleCookies(page);
+
         res.json({
             ok: true,
-            url: page.url(),
+            url: await safeCurrentUrl(page),
             message: "Navigate manually in noVNC and complete verification.",
         });
     } catch (error) {
