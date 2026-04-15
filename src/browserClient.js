@@ -5,14 +5,11 @@ let context;
 let page;
 let browser;
 
-const USER_DATA_DIR =
-    process.env.PLAYWRIGHT_USER_DATA_DIR || "/data/chromium-profile";
-
 function looksBlocked(url, title) {
     return /challenge|verify|captcha|cloudflare/i.test(`${url} ${title}`);
 }
 
-async function ensureBrowser() {
+export async function ensureBrowser() {
     if (browser && page) return page;
 
     browser = await firefox.launch({
@@ -26,6 +23,12 @@ async function ensureBrowser() {
 
     page = await context.newPage();
     return page;
+}
+
+export async function openBrowserSession() {
+    const page = await ensureBrowser();
+    await page.bringToFront();
+    return { ok: true };
 }
 
 export function getExistingBrowser() {
