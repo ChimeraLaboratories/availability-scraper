@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 import {
-    openBrowserSession,
+    ensureBrowser,
     getBrowserStatus,
     fetchAvailabilityInBrowser,
     filterAvailability,
@@ -21,12 +21,43 @@ app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/api/open-browser", async (req, res) => {
     try {
-        const result = await openBrowserSession();
-        res.json(result);
+        const { page } = await ensureBrowser();
+
+        await page.goto("https://www.specsavers.co.uk/book/location", {
+            waitUntil: "domcontentloaded",
+            timeout: 60000,
+        });
+
+        await page.bringToFront();
+
+        res.json({
+            ok: true,
+            message: "Browser opened. Complete any verification or login in noVNC, then continue.",
+        });
     } catch (error) {
-        console.error(error);
         res.status(500).json({
-            error: error.message || "Unknown error",
+            ok: false,
+            error: String(error),
+        });
+    }
+});
+
+app.get("/api/continue", async (req, res) => {
+    try {
+        const { page } = await ensureBrowser();
+
+        await page.bringToFront();
+        await page.waitForLoadState("domcontentloaded");
+
+        res.json({
+            ok: true,
+            url: page.url(),
+            message: "Session is ready. Continue with search from the existing verified browser.",
+        });
+    } catch (error) {
+        res.status(500).json({
+            ok: false,
+            error: String(error),
         });
     }
 });
@@ -165,6 +196,62 @@ app.get("/api/dashboard", async (req, res) => {
         console.error(error);
         res.status(500).json({
             error: error.message || "Unknown error",
+        });
+    }
+});
+
+app.get("/api/search-location", async (req, res) => {
+    try {
+        const location = String(req.query.location || "").trim();
+        if (!location) {
+            return res.status(400).json({ ok: false, error: "Missing location" });
+        }
+
+        const { page } = await ensureBrowser();
+
+        await page.bringToFront();
+        await page.waitForLoadState("domcontentloaded");
+
+        // You may need to adjust selectors for the live page
+        const input = page.locator('input[type="text"]').first();
+        await input.waitFor({ timeout: 15000 });
+        await input.fill(location);
+        await input.press("Enter");
+
+        await page.waitForLoadState("domcontentloaded");
+
+        res.json({
+            ok: true,
+            message: `Search submitted for ${location}`,
+            url: page.url(),
+        });
+    } catch (error) {
+        res.status(500).json({
+            ok: false,
+            error: String(error),
+        });
+    }
+});
+
+app.get("/api/session-status", async (req, res) => {
+    try {
+        const { page } = await ensureBrowser();
+        const url = page.url();
+        const title = await page.title();
+
+        const needsManualVerification =
+            /challenge|verify|captcha|cloudflare/i.test(url + " " + title);
+
+        res.json({
+            ok: true,
+            url,
+            title,
+            needsManualVerification,
+        });
+    } catch (error) {
+        res.status(500).json({
+            ok: false,
+            error: String(error),
         });
     }
 });
