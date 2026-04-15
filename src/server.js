@@ -8,6 +8,7 @@ import {
     openBrowserSession,
     closeBrowser,
     saveBrowserState,
+    getBrowserStatus,
 } from "./browserClient.js";
 
 dotenv.config();
@@ -251,30 +252,8 @@ app.get("/api/search-location", async (req, res) => {
 
 app.get("/api/session-status", async (req, res) => {
     try {
-        const existing = getExistingBrowser();
-        if (!existing?.page) {
-            return res.json({
-                ok: true,
-                browserOpen: false,
-                needsManualVerification: true,
-                message: "Browser not open yet.",
-            });
-        }
-
-        const { page } = existing;
-        const url = page.url();
-        const title = await page.title();
-
-        const needsManualVerification =
-            /challenge|verify|captcha|cloudflare/i.test(`${url} ${title}`);
-
-        res.json({
-            ok: true,
-            browserOpen: true,
-            url,
-            title,
-            needsManualVerification,
-        });
+        const result = await getBrowserStatus();
+        res.json(result);
     } catch (error) {
         res.status(500).json({ ok: false, error: String(error) });
     }
