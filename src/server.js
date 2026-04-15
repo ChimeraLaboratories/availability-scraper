@@ -356,7 +356,40 @@ function formatDateTime(dateStr, timeStr) {
         .replace(",", " at");
 }
 
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
+const server = app.listen(port, "0.0.0.0", () => {
+    console.log(`Server running at http://0.0.0.0:${port}`);
     console.log("Open the browser session first at /api/open-browser");
 });
+
+server.on("listening", () => {
+    console.log("HTTP server is listening");
+});
+
+server.on("close", () => {
+    console.log("HTTP server closed");
+});
+
+server.on("error", (error) => {
+    console.error("HTTP server error:", error);
+});
+
+process.on("beforeExit", (code) => {
+    console.log("Process beforeExit with code:", code);
+});
+
+process.on("exit", (code) => {
+    console.log("Process exit with code:", code);
+});
+
+process.on("SIGTERM", () => {
+    console.log("Received SIGTERM");
+});
+
+process.on("SIGINT", () => {
+    console.log("Received SIGINT");
+});
+
+// Temporary keepalive so the process cannot silently disappear while we debug
+setInterval(() => {
+    console.log("Heartbeat:", new Date().toISOString());
+}, 30000);
