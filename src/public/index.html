@@ -2,60 +2,27 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Availability Scraper</title>
-    <link rel="stylesheet" href="/styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Next Available</title>
+    <link rel="stylesheet" href="/styles.css"/>
 </head>
 <body>
 <main class="container">
-    <h1>Specsavers Availability</h1>
 
-    <form id="form" class="card">
-        <label>
-            Store number
-            <input type="text" id="storeNumber" value="8" />
-        </label>
+    <div class="topbar">
+        <h1>Next Available</h1>
+        <div>
+            <button id="openBrowserBtn">Open Session</button>
+            <button id="refreshBtn">Refresh</button>
+        </div>
+    </div>
 
-        <label>
-            Slot type
-            <input type="text" id="slotType" value="OCT_SCAN" />
-        </label>
+    <div id="status" class="status"></div>
 
-        <label>
-            Start date
-            <input type="date" id="startDate" />
-        </label>
+    <div id="nextAvailable" class="next"></div>
 
-        <label>
-            Max number of days
-            <input type="number" id="maxNumberOfDays" value="42" min="1" max="90" />
-        </label>
+    <div id="list" class="list"></div>
 
-        <label>
-            After time
-            <input type="time" id="afterTime" />
-        </label>
-
-        <label>
-            Before time
-            <input type="time" id="beforeTime" />
-        </label>
-
-        <label class="checkbox">
-            <input type="checkbox" id="weekdaysOnly" />
-            Weekdays only
-        </label>
-
-        <label class="checkbox">
-            <input type="checkbox" id="weekendsOnly" />
-            Weekends only
-        </label>
-
-        <button type="submit">Check availability</button>
-    </form>
-
-    <section id="status"></section>
-    <section id="results" class="results"></section>
 </main>
 
 <script src="/app.js"></script>
