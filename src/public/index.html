@@ -2,29 +2,41 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Next Available</title>
-    <link rel="stylesheet" href="/styles.css"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Availability Dashboard</title>
+    <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-<main class="container">
-
-    <div class="topbar">
-        <h1>Next Available</h1>
-        <div>
-            <button id="openBrowserBtn">Open Session</button>
-            <button id="refreshBtn">Refresh</button>
+<div class="app-shell">
+    <header class="topbar">
+        <div class="topbar-left">
+            <div class="brand-mark">AD</div>
+            <div>
+                <h1 class="app-title">Availability Dashboard</h1>
+                <p class="app-subtitle">Information Centre Online Availability View</p>
+            </div>
         </div>
-    </div>
 
-    <div id="status" class="status"></div>
+        <div class="topbar-right">
+            <div id="status" class="status-pill status-idle">Idle</div>
+            <button id="openBrowserBtn" class="btn btn-secondary">Open Browser</button>
+            <button id="refreshBtn" class="btn btn-primary">Refresh</button>
+        </div>
+    </header>
 
-    <div id="nextAvailable" class="next"></div>
+    <main class="page page-single">
+        <section class="list-card compact-card">
+            <div class="list-card-header compact-header">
+                <div>
+                    <h2>Availability List</h2>
+                </div>
+            </div>
 
-    <div id="list" class="list"></div>
+            <div id="list" class="availability-list"></div>
+        </section>
+    </main>
+</div>
 
-</main>
-
-<script src="/app.js"></script>
+<script type="module" src="/app.js"></script>
 </body>
 </html>
