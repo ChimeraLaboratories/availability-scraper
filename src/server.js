@@ -5,9 +5,9 @@ import { fileURLToPath } from "url";
 import {
     ensureBrowser,
     getExistingBrowser,
-    getBrowserStatus,
-    fetchAvailabilityInBrowser,
-    filterAvailability,
+    openBrowserSession,
+    closeBrowser,
+    saveBrowserState,
 } from "./browserClient.js";
 
 dotenv.config();
@@ -195,6 +195,18 @@ app.get("/api/dashboard", async (req, res) => {
         console.error(error);
         res.status(500).json({
             error: error.message || "Unknown error",
+        });
+    }
+});
+
+app.post("/api/save-browser-state", async (req, res) => {
+    try {
+        const result = await saveBrowserState();
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            ok: false,
+            error: String(error),
         });
     }
 });
