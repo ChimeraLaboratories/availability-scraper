@@ -153,6 +153,10 @@ app.get("/api/dashboard", async (req, res) => {
                     slotType: category.slotType,
                     nextAvailableDate: firstDay?.date || null,
                     nextAvailableTime: firstSlot?.startTime || null,
+                    nextAvailableLabel:
+                        firstDay?.date && firstSlot?.startTime
+                            ? formatDateTime(firstDay.date, firstSlot.startTime)
+                            : null,
                     totalDays: filtered.length,
                     totalSlots: filtered.reduce(
                         (sum, day) => sum + day.appointmentSlots.length,
@@ -169,6 +173,7 @@ app.get("/api/dashboard", async (req, res) => {
                     error: error.message || "Unknown error",
                     nextAvailableDate: null,
                     nextAvailableTime: null,
+                    nextAvailableLabel: null,
                     totalDays: 0,
                     totalSlots: 0,
                     days: [],
@@ -323,6 +328,37 @@ app.get("/api/debug-cookies", async (req, res) => {
         });
     }
 });
+
+function isWeekend(dateStr) {
+    const date = new Date(`${dateStr}T00:00:00`);
+    const day = date.getDay();
+    return day === 0 || day === 6;
+}
+
+function filterAvailability(days = [], filters = {}) {
+    return (days || [])
+        .map((day) => {
+            let appointmentSlots = Array.isArray(day.appointmentSlots)
+                ? [...day.appointmentSlots]
+                : [];
+
+            if (filters.weekendsOnly && !isWeekend(day.date)) {
+                appointmentSlots = [];
+            }
+
+            if (filters.afterTime) {
+                appointmentSlots = appointmentSlots.filter(
+                    (slot) => slot.startTime >= filters.afterTime
+                );
+            }
+
+            return {
+                ...day,
+                appointmentSlots,
+            };
+        })
+        .filter((day) => day.appointmentSlots.length > 0);
+}
 
 function formatDateTime(dateStr, timeStr) {
     if (!dateStr || !timeStr) return null;
