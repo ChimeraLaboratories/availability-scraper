@@ -1,8 +1,9 @@
-import { chromium } from "playwright";
+import { firefox } from "playwright";
 import fs from "fs/promises";
 
-let context = null;
-let page = null;
+let context;
+let page;
+let browser;
 
 const USER_DATA_DIR =
     process.env.PLAYWRIGHT_USER_DATA_DIR || "/data/chromium-profile";
@@ -11,29 +12,20 @@ function looksBlocked(url, title) {
     return /challenge|verify|captcha|cloudflare/i.test(`${url} ${title}`);
 }
 
-export async function ensureBrowser() {
-    if (context) {
-        const pages = context.pages();
-        page = pages[0] ?? page ?? await context.newPage();
-        return { context, page };
-    }
+async function ensureBrowser() {
+    if (browser && page) return page;
 
-    await fs.mkdir(USER_DATA_DIR, { recursive: true });
-
-    context = await chromium.launchPersistentContext(USER_DATA_DIR, {
+    browser = await firefox.launch({
         headless: false,
-        noViewport: true,
-        locale: "en-GB",
-        timezoneId: "Europe/London",
-        javaScriptEnabled: true,
-        args: [
-            "--no-sandbox",
-            "--disable-dev-shm-usage",
-        ],
+        slowMo: 200,
     });
 
-    page = context.pages()[0] ?? await context.newPage();
-    return { context, page };
+    context = await browser.newContext({
+        viewport: { width: 1400, height: 900 },
+    });
+
+    page = await context.newPage();
+    return page;
 }
 
 export function getExistingBrowser() {

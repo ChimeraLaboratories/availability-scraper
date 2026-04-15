@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/playwright:v1.54.2-jammy
+FROM mcr.microsoft.com/playwright:v1.59.1-jammy
 
 WORKDIR /app
 
@@ -7,7 +7,8 @@ RUN npm install
 
 COPY . .
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    firefox \
     xvfb \
     fluxbox \
     x11vnc \
@@ -16,7 +17,10 @@ RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
     ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+    tzdata \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN npx playwright install firefox
 
 ENV DISPLAY=:99
 ENV PORT=3001
