@@ -119,5 +119,3 @@ async function loadDashboard() {
 refreshBtn.addEventListener("click", async () => {
     await loadDashboard();
 });
-
-loadDashboard();

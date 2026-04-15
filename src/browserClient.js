@@ -1,33 +1,61 @@
 import { chromium } from "playwright";
+import fs from "fs/promises";
 
-let context;
-let page;
+let context = null;
+let page = null;
 
-const USER_DATA_DIR = process.env.PLAYWRIGHT_USER_DATA_DIR || "/data/chromium-profile";
+const USER_DATA_DIR =
+    process.env.PLAYWRIGHT_USER_DATA_DIR || "/data/chromium-profile";
+
+function looksBlocked(url, title) {
+    return /challenge|verify|captcha|cloudflare/i.test(`${url} ${title}`);
+}
 
 export async function ensureBrowser() {
-    if (context && page) {
-        return page;
+    if (context) {
+        const pages = context.pages();
+        page = pages[0] ?? page ?? await context.newPage();
+        return { context, page };
     }
+
+    await fs.mkdir(USER_DATA_DIR, { recursive: true });
 
     context = await chromium.launchPersistentContext(USER_DATA_DIR, {
         headless: false,
-        viewport: { width: 1400, height: 900 },
+        noViewport: true,
+        locale: "en-GB",
+        timezoneId: "Europe/London",
+        javaScriptEnabled: true,
         args: [
-            "--start-maximized",
-            "--disable-dev-shm-usage",
             "--no-sandbox",
-        ]
+            "--disable-dev-shm-usage",
+        ],
     });
 
-    const pages = context.pages();
-    page = pages.length ? pages[0] : await context.newPage();
-
+    page = context.pages()[0] ?? await context.newPage();
     return { context, page };
 }
 
+export function getExistingBrowser() {
+    if (!context) return null;
+
+    const pages = context.pages();
+    return {
+        context,
+        page: pages[0] ?? page ?? null,
+    };
+}
+
+export async function closeBrowser() {
+    if (context) {
+        await context.close();
+    }
+    context = null;
+    page = null;
+}
+
 export async function openBrowserSession() {
-    const page = await ensureBrowser();
+    const { page } = await ensureBrowser();
 
     await page.bringToFront();
     await page.waitForLoadState("domcontentloaded");
@@ -40,12 +68,22 @@ export async function openBrowserSession() {
 
 export async function getBrowserStatus() {
     if (!page) {
-        return { url: null, ready: false };
+        return {
+            url: null,
+            title: null,
+            ready: false,
+            needsManualVerification: true,
+        };
     }
 
+    const url = page.url();
+    const title = await page.title();
+
     return {
-        url: page.url(),
+        url,
+        title,
         ready: true,
+        needsManualVerification: looksBlocked(url, title),
     };
 }
 
@@ -56,37 +94,55 @@ export async function fetchAvailabilityInBrowser({
                                                      maxNumberOfDays = 42,
                                                      lineOfBusiness = "OPTICAL",
                                                  }) {
-    const page = await ensureBrowser();
+    const { page } = await ensureBrowser();
+
+    await page.bringToFront();
+    await page.waitForLoadState("domcontentloaded");
+
+    const currentUrl = page.url();
+    const currentTitle = await page.title();
+
+    if (looksBlocked(currentUrl, currentTitle)) {
+        throw new Error(
+            "Manual verification still required in noVNC before availability can be fetched."
+        );
+    }
+
+    if (!/specsavers\.co\.uk/i.test(currentUrl)) {
+        throw new Error(
+            `Browser is not on the Specsavers site. Current URL: ${currentUrl}`
+        );
+    }
 
     const result = await page.evaluate(
         async ({ storeNumber, slotType, startDate, maxNumberOfDays, lineOfBusiness }) => {
             const query = `
-                query GetAvailableAppointmentSlots(
-                    $storeNumbers: [String!]!,
-                    $slotsQuery: AvailableSlotsQueryInput!,
-                    $lineOfBusiness: LineOfBusiness!
-                ) {
-                    storeAppointmentSlots(
-                        storeNumbers: $storeNumbers
-                        lineOfBusiness: $lineOfBusiness
-                    ) {
-                        availableSlots(query: $slotsQuery) {
-                            date
-                            count
-                            appointmentSlots {
-                                id
-                                clinicId
-                                slotType
-                                startTime
-                                endTime
-                                __typename
-                            }
-                            __typename
-                        }
-                        __typename
-                    }
-                }
-            `;
+        query GetAvailableAppointmentSlots(
+          $storeNumbers: [String!]!,
+          $slotsQuery: AvailableSlotsQueryInput!,
+          $lineOfBusiness: LineOfBusiness!
+        ) {
+          storeAppointmentSlots(
+            storeNumbers: $storeNumbers
+            lineOfBusiness: $lineOfBusiness
+          ) {
+            availableSlots(query: $slotsQuery) {
+              date
+              count
+              appointmentSlots {
+                id
+                clinicId
+                slotType
+                startTime
+                endTime
+                __typename
+              }
+              __typename
+            }
+            __typename
+          }
+        }
+      `;
 
             const response = await fetch("/graphql", {
                 method: "POST",
