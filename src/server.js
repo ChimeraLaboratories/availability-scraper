@@ -23,16 +23,14 @@ app.get("/api/open-browser", async (req, res) => {
     try {
         const { page } = await ensureBrowser();
 
-        await page.goto("https://www.specsavers.co.uk/book/location", {
-            waitUntil: "domcontentloaded",
-            timeout: 60000,
-        });
-
-        await page.bringToFront();
+        if (page.url() === "about:blank") {
+            await page.bringToFront();
+        }
 
         res.json({
             ok: true,
-            message: "Browser opened. Complete any verification or login in noVNC, then continue.",
+            message: "Browser opened. Use noVNC to navigate manually.",
+            url: page.url(),
         });
     } catch (error) {
         res.status(500).json({
