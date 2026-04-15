@@ -38,6 +38,12 @@ export async function ensureBrowser() {
         ],
     });
 
+    await browserContext.addInitScript(() => {
+        Object.defineProperty(navigator, "cookieEnabled", {
+            get: () => true,
+        });
+    });
+
     const pages = browserContext.pages();
     page = pages[0] || (await browserContext.newPage());
 
