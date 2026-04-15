@@ -4,6 +4,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import {
     ensureBrowser,
+    getExistingBrowser,
     getBrowserStatus,
     fetchAvailabilityInBrowser,
     filterAvailability,
@@ -233,18 +234,75 @@ app.get("/api/search-location", async (req, res) => {
 
 app.get("/api/session-status", async (req, res) => {
     try {
-        const { page } = await ensureBrowser();
+        const existing = getExistingBrowser();
+        if (!existing?.page) {
+            return res.json({
+                ok: true,
+                browserOpen: false,
+                needsManualVerification: true,
+                message: "Browser not open yet.",
+            });
+        }
+
+        const { page } = existing;
         const url = page.url();
         const title = await page.title();
 
         const needsManualVerification =
-            /challenge|verify|captcha|cloudflare/i.test(url + " " + title);
+            /challenge|verify|captcha|cloudflare/i.test(`${url} ${title}`);
 
         res.json({
             ok: true,
+            browserOpen: true,
             url,
             title,
             needsManualVerification,
+        });
+    } catch (error) {
+        res.status(500).json({ ok: false, error: String(error) });
+    }
+});
+
+app.get("/api/go-to-site", async (req, res) => {
+    try {
+        const { page } = await ensureBrowser();
+
+        await page.bringToFront();
+        await page.goto("https://www.specsavers.co.uk/book/location", {
+            waitUntil: "domcontentloaded",
+            timeout: 60000,
+        });
+
+        res.json({
+            ok: true,
+            url: page.url(),
+            message: "Navigate manually in noVNC and complete verification.",
+        });
+    } catch (error) {
+        res.status(500).json({ ok: false, error: String(error) });
+    }
+});
+
+app.get("/api/debug-cookies", async (req, res) => {
+    try {
+        const existing = getExistingBrowser();
+        if (!existing?.page) {
+            return res.status(400).json({ ok: false, error: "Browser not open" });
+        }
+
+        const cookies = await existing.context.cookies();
+
+        res.json({
+            ok: true,
+            count: cookies.length,
+            cookies: cookies.map((c) => ({
+                name: c.name,
+                domain: c.domain,
+                path: c.path,
+                expires: c.expires,
+                httpOnly: c.httpOnly,
+                secure: c.secure,
+            })),
         });
     } catch (error) {
         res.status(500).json({
