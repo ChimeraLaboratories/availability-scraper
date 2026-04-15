@@ -3,31 +3,27 @@ import { chromium } from "playwright";
 let context;
 let page;
 
-const USER_DATA_DIR = "C:\\temp\\availability-edge-profile";
+const USER_DATA_DIR = process.env.PLAYWRIGHT_USER_DATA_DIR || "/data/chromium-profile";
 
-async function ensureBrowser() {
+export async function ensureBrowser() {
     if (context && page) {
         return page;
     }
 
     context = await chromium.launchPersistentContext(USER_DATA_DIR, {
-        channel: "msedge",
         headless: false,
-        viewport: null,
-        locale: "en-GB",
+        viewport: { width: 1400, height: 900 },
         args: [
-            "--disable-blink-features=AutomationControlled",
-        ],
+            "--start-maximized",
+            "--disable-dev-shm-usage",
+            "--no-sandbox",
+        ]
     });
 
     const pages = context.pages();
     page = pages.length ? pages[0] : await context.newPage();
 
-    await page.goto("https://www.specsavers.co.uk/book/location", {
-        waitUntil: "domcontentloaded",
-    });
-
-    return page;
+    return { context, page };
 }
 
 export async function openBrowserSession() {
