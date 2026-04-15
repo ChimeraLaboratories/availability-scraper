@@ -2,7 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
-import { fetchAvailability, filterAvailability } from "./specsavers.js";
+import { fetchAvailabilityInBrowser, filterAvailability } from "./browserClient.js";
 
 dotenv.config();
 
@@ -16,7 +16,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/api/availability", async (req, res) => {
     try {
-        const storeNumber = req.query.storeNumber || process.env.SPECSAVERS_STORE;
+        const storeNumber = req.query.storeNumber || process.env.SPECSAVERS_STORE || "8";
         const slotType = req.query.slotType;
         const startDate = req.query.startDate;
         const maxNumberOfDays = Number(req.query.maxNumberOfDays || 42);
@@ -31,7 +31,7 @@ app.get("/api/availability", async (req, res) => {
             });
         }
 
-        const raw = await fetchAvailability({
+        const raw = await fetchAvailabilityInBrowser({
             storeNumber,
             slotType,
             startDate,
@@ -63,4 +63,5 @@ app.get("/api/availability", async (req, res) => {
 
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
+    console.log("A browser window will open on first availability request.");
 });
