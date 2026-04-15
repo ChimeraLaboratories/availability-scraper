@@ -14,4 +14,4 @@ x11vnc -display :99 -forever -shared -rfbport 5900 &
 websockify --web=/usr/share/novnc/ 6080 localhost:5900 &
 
 echo "Starting app on port ${PORT}..."
-exec npm run dev
+exec node src/server.js
