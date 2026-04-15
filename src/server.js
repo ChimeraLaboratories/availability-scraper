@@ -22,7 +22,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/api/open-browser", async (req, res) => {
     try {
-        const { page } = await ensureBrowser();
+        const page = await ensureBrowser();
 
         if (page.url() === "about:blank") {
             await page.bringToFront();
@@ -43,7 +43,7 @@ app.get("/api/open-browser", async (req, res) => {
 
 app.get("/api/continue", async (req, res) => {
     try {
-        const { page } = await ensureBrowser();
+        const page = await ensureBrowser();
 
         await page.bringToFront();
         await page.waitForLoadState("domcontentloaded");
@@ -206,7 +206,7 @@ app.get("/api/search-location", async (req, res) => {
             return res.status(400).json({ ok: false, error: "Missing location" });
         }
 
-        const { page } = await ensureBrowser();
+        const page = await ensureBrowser();
 
         await page.bringToFront();
         await page.waitForLoadState("domcontentloaded");
@@ -265,7 +265,7 @@ app.get("/api/session-status", async (req, res) => {
 
 app.get("/api/go-to-site", async (req, res) => {
     try {
-        const { page } = await ensureBrowser();
+        const page = await ensureBrowser();
 
         await page.bringToFront();
         await page.goto("https://www.specsavers.co.uk/book/location", {
