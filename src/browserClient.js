@@ -1,22 +1,31 @@
 import { chromium } from "playwright";
 
-let browser;
+let context;
 let page;
 
+const EDGE_USER_DATA_DIR =
+    "C:\\Users\\CaneE\\AppData\\Local\\Microsoft\\Edge\\User Data\\Default";
+
 async function ensureBrowser() {
-    if (browser && page) {
+    if (context && page) {
         return page;
     }
 
-    browser = await chromium.launch({
+    context = await chromium.launchPersistentContext(EDGE_USER_DATA_DIR, {
+        channel: "msedge",
         headless: false,
+        slowMo: 150,
+        viewport: null,
+        args: [
+            "--disable-blink-features=AutomationControlled",
+        ],
+        locale: "en-GB",
+        userAgent:
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0",
     });
 
-    const context = await browser.newContext({
-        viewport: { width: 1400, height: 900 },
-    });
-
-    page = await context.newPage();
+    const existingPages = context.pages();
+    page = existingPages.length ? existingPages[0] : await context.newPage();
 
     await page.goto("https://www.specsavers.co.uk/book/location", {
         waitUntil: "domcontentloaded",
@@ -25,10 +34,39 @@ async function ensureBrowser() {
     return page;
 }
 
+export async function openBrowserSession() {
+    const page = await ensureBrowser();
+
+    await page.bringToFront();
+    await page.waitForLoadState("domcontentloaded");
+
+    const acceptCookies = page.getByRole("button", { name: /accept all cookies/i });
+    if (await acceptCookies.isVisible().catch(() => false)) {
+        await acceptCookies.click();
+        await page.waitForTimeout(1000);
+    }
+
+    return {
+        url: page.url(),
+        message:
+            "Browser opened using your Edge profile. In the Edge window, complete the Specsavers flow until you reach the date-and-time page, then use Check availability.",
+    };
+}
+
+export async function getBrowserStatus() {
+    const page = await ensureBrowser();
+    const url = page.url();
+
+    return {
+        url,
+        ready: url.includes("/date-and-time"),
+    };
+}
+
 function buildAvailabilityQuery() {
     return `
     query GetAvailableAppointmentSlots(
-      $storeNumbers: [String!],
+      $storeNumbers: [String!]!,
       $slotsQuery: AvailableSlotsQueryInput!,
       $lineOfBusiness: LineOfBusiness!
     ) {
@@ -36,13 +74,12 @@ function buildAvailabilityQuery() {
         storeNumbers: $storeNumbers
         lineOfBusiness: $lineOfBusiness
       ) {
-        __typename
         availableSlots(query: $slotsQuery) {
           date
           count
           appointmentSlots {
             id
-            clinicianId
+            clinicId
             slotType
             startTime
             endTime
@@ -65,14 +102,27 @@ export async function fetchAvailabilityInBrowser({
                                                  }) {
     const page = await ensureBrowser();
 
+    const url = page.url();
+
+    if (!url.includes("/date-and-time")) {
+        throw new Error(
+            `Browser not ready.\nCurrent URL: ${url}\n\nPlease do this in the opened Edge window:\n- Accept cookies\n- Select store (Peterborough Bridge Street)\n- Choose appointment type\n- Enter DOB\n- Continue until you are on the date-and-time page\nThen try again.`
+        );
+    }
+
     const result = await page.evaluate(
         async ({ storeNumber, slotType, startDate, maxNumberOfDays, lineOfBusiness, query }) => {
-            const response = await fetch("/graphql", {
+            const response = await fetch("https://www.specsavers.co.uk/graphql", {
                 method: "POST",
                 credentials: "include",
                 headers: {
-                    "Content-Type": "application/json",
                     "Accept": "*/*",
+                    "Content-Type": "application/json",
+                    "apollographql-client-name": "nuxt-find-and-book",
+                    "apollographql-client-version": "1.1219.0",
+                    "x-specsavers-application-id": "nuxt-find-and-book/1.1219.0",
+                    "x-specsavers-market-id": "GB",
+                    "x-correlation-id": crypto.randomUUID(),
                 },
                 body: JSON.stringify({
                     operationName: "GetAvailableAppointmentSlots",
@@ -119,7 +169,7 @@ export async function fetchAvailabilityInBrowser({
         count: day.count,
         appointmentSlots: (day.appointmentSlots ?? []).map((slot) => ({
             id: slot.id,
-            clinicianId: slot.clinicianId ?? null,
+            clinicId: slot.clinicId ?? null,
             slotType: slot.slotType,
             startTime: slot.startTime,
             endTime: slot.endTime ?? null,
