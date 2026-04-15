@@ -9,6 +9,27 @@ function looksBlocked(url, title) {
     return /challenge|verify|captcha|cloudflare/i.test(`${url} ${title}`);
 }
 
+async function acceptCookies(page) {
+    const btn = page.getByRole("button", { name: /accept all cookies/i });
+
+    if (await btn.count()) {
+        try {
+            await btn.first().click({ force: true, timeout: 5000 });
+            console.log("Cookies accepted");
+        } catch (e) {
+            console.log("Cookie click failed, trying JS click");
+
+            await page.evaluate(() => {
+                const buttons = Array.from(document.querySelectorAll("button"));
+                const target = buttons.find((b) =>
+                    (b.innerText || "").toLowerCase().includes("accept all cookies")
+                );
+                if (target) target.click();
+            });
+        }
+    }
+}
+
 export async function ensureBrowser() {
     if (browser && page) return page;
 
@@ -18,7 +39,7 @@ export async function ensureBrowser() {
     });
 
     context = await browser.newContext({
-        viewport: { width: 1400, height: 900 },
+        viewport: { width: 1920, height: 1080 },
     });
 
     page = await context.newPage();
@@ -28,6 +49,17 @@ export async function ensureBrowser() {
 export async function openBrowserSession() {
     const page = await ensureBrowser();
     await page.bringToFront();
+
+    await page.goto("https://www.specsavers.co.uk/book/location", {
+        waitUntil: "domcontentloaded",
+    });
+
+    await page.evaluate(() => {
+        document.body.style.zoom = "100%";
+    });
+
+    await acceptCookies(page);
+
     return { ok: true };
 }
 
@@ -47,6 +79,7 @@ export async function closeBrowser() {
     }
     context = null;
     page = null;
+    browser = null;
 }
 
 export async function getBrowserStatus() {
@@ -77,7 +110,7 @@ export async function fetchAvailabilityInBrowser({
                                                      maxNumberOfDays = 42,
                                                      lineOfBusiness = "OPTICAL",
                                                  }) {
-    const { page } = await ensureBrowser();
+    const page = await ensureBrowser();
 
     await page.bringToFront();
     await page.waitForLoadState("domcontentloaded");
