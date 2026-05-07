@@ -96,14 +96,14 @@ app.get("/api/dashboard", async (req, res) => {
             },
             {
                 key: "childEyeTestWeekend",
-                label: "Child Eye Test Weekend",
+                label: "Child Eye Test - Weekend",
                 lineOfBusiness: "OPTICAL",
                 slotType: "CHILD_EYE_TEST",
                 filters: { weekendsOnly: true },
             },
             {
                 key: "childEyeTestAfter4",
-                label: "Child Eye Test After 4pm",
+                label: "Child Eye Test - After 4pm",
                 lineOfBusiness: "OPTICAL",
                 slotType: "CHILD_EYE_TEST",
                 filters: { afterTime: "16:00" },
