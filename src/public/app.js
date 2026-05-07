@@ -4,6 +4,8 @@ const listEl = document.getElementById("list");
 
 const refreshBtn = document.getElementById("refreshBtn");
 
+console.log("LOADED: App.js");
+
 function setStatus(text, variant = "idle") {
     statusEl.textContent = text;
     statusEl.className = `status-pill status-${variant}`;
@@ -103,11 +105,22 @@ async function loadDashboard() {
         const response = await fetch("/api/dashboard");
         const data = await response.json();
 
+        console.log("DASHBOARD DATA:", data);
+        console.table(data.categories?.map(c => ({
+            label: c.label,
+            totalDays: c.totalDays,
+            totalSlots: c.totalSlots,
+            nextAvailableLabel: c.nextAvailableLabel,
+            nextAvailableDate: c.nextAvailableDate,
+            nextAvailableTime: c.nextAvailableTime,
+            firstDay: c.days?.[0]?.date,
+            firstDaySlots: c.days?.[0]?.appointmentSlots?.length
+        })));
+
         if (!response.ok) {
             throw new Error(data.error || "Failed to load dashboard");
         }
-
-        renderNextAvailable(data.nextAvailableOverall);
+        
         renderCategories(data.categories || []);
         setStatus("Up to date", "success");
     } catch (error) {
