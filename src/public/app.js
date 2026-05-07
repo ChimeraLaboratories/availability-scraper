@@ -33,7 +33,7 @@ function renderNextAvailable(nextAvailableOverall) {
                 Store ${escapeHtml(nextAvailableOverall.storeNumber || "")}
             </p>
         </div>
-        <div class="next-time">${escapeHtml(nextAvailableOverall.nextAvailable)}</div>
+        <div class="next-time">${escapeHtml(nextAvailableOverall.nextAvailableLabel)}</div>
     `;
 }
 
@@ -50,11 +50,11 @@ function renderCategories(categories) {
     listEl.innerHTML = categories
         .map((category) => {
             const hasError = Boolean(category.error);
-            const hasAvailability = Boolean(category.nextAvailable);
+            const hasAvailability = Boolean(category.nextAvailableLabel);
 
             let availabilityText = "No Availability";
             if (hasError) availabilityText = category.error;
-            if (hasAvailability) availabilityText = category.nextAvailable;
+            if (hasAvailability) availabilityText = category.nextAvailableLabel;
 
             const badges = [
                 buildBadge(`${category.totalDays || 0} days`, "neutral"),
@@ -107,6 +107,7 @@ async function loadDashboard() {
             throw new Error(data.error || "Failed to load dashboard");
         }
 
+        renderNextAvailable(data.nextAvailableOverall);
         renderCategories(data.categories || []);
         setStatus("Up to date", "success");
     } catch (error) {
