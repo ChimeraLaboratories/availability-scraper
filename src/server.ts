@@ -1,7 +1,5 @@
 import express from "express";
 import dotenv from "dotenv";
-import path from "path";
-import { fileURLToPath } from "url";
 import {
     ensureBrowser,
     getExistingBrowser,
@@ -9,23 +7,46 @@ import {
     saveBrowserState,
     getBrowserStatus,
 } from "./browserClient.js";
+import type { Cookie, Page } from "playwright";
+import type {
+    AppointmentSlot,
+    AvailabilityDay,
+} from "./browserClient.js";
+import path from "node:path";
 
 dotenv.config();
 
 const app = express();
 const port = Number(process.env.PORT || 3001);
+const publicDirectory = path.resolve(process.cwd(), "src/public");
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+app.use(express.static(publicDirectory));
 
-app.use(express.static(path.join(__dirname, "public")));
-
-async function safeCurrentUrl(page) {
+async function safeCurrentUrl(
+    page: Page | null | undefined,
+): Promise<string> {
     try {
         return page?.url?.() || "about:blank";
     } catch {
         return "about:blank";
     }
+}
+
+function getErrorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
+}
+
+interface AvailabilityFilters {
+    weekendsOnly?: boolean;
+    afterTime?: string;
+}
+
+interface DashboardCategory {
+    key: string;
+    label: string;
+    lineOfBusiness: "OPTICAL" | "AUDIOLOGY";
+    slotType: string;
+    filters: AvailabilityFilters;
 }
 
 app.get("/api/open-browser", async (req, res) => {
@@ -76,7 +97,7 @@ app.get("/api/browser-status", async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({
-            error: error.message || "Unknown error",
+            error: getErrorMessage(error),
         });
     }
 });
@@ -86,7 +107,7 @@ app.get("/api/dashboard", async (req, res) => {
         const storeNumber = process.env.SPECSAVERS_STORE || "8";
         const startDate = new Date().toISOString().slice(0, 10);
 
-        const categories = [
+        const categories: DashboardCategory[] = [
             {
                 key: "adultEyeTest",
                 label: "Adult Eye Test",
@@ -178,7 +199,7 @@ app.get("/api/dashboard", async (req, res) => {
                     label: category.label,
                     lineOfBusiness: category.lineOfBusiness,
                     slotType: category.slotType,
-                    error: error.message || "Unknown error",
+                    error: getErrorMessage(error),
                     nextAvailableDate: null,
                     nextAvailableTime: null,
                     nextAvailableLabel: null,
@@ -207,7 +228,7 @@ app.get("/api/dashboard", async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({
-            error: error.message || "Unknown error",
+            error: getErrorMessage(error),
         });
     }
 });
@@ -275,7 +296,8 @@ app.get("/api/go-to-site", async (req, res) => {
             timeout: 60000,
         });
 
-        await handleCookies(page);
+        //TODO
+        //await handleCookies(page);
 
         res.json({
             ok: true,
@@ -294,12 +316,19 @@ app.get("/api/debug-cookies", async (req, res) => {
             return res.status(400).json({ ok: false, error: "Browser not open" });
         }
 
-        const cookies = await existing.context.cookies();
+        if (!existing.browserContext) {
+            return res.status(400).json({
+                ok: false,
+                error: "Browser is not open",
+            });
+        }
+
+        const cookies = await existing.browserContext?.cookies();
 
         res.json({
             ok: true,
             count: cookies.length,
-            cookies: cookies.map((c) => ({
+            cookies: cookies.map((c: Cookie) => ({
                 name: c.name,
                 domain: c.domain,
                 path: c.path,
@@ -316,16 +345,16 @@ app.get("/api/debug-cookies", async (req, res) => {
     }
 });
 
-function isWeekend(dateStr) {
+function isWeekend(dateStr: string): boolean {
     const date = new Date(`${dateStr}T00:00:00`);
     const day = date.getDay();
     return day === 0 || day === 6;
 }
 
-function filterAvailability(days = [], filters = {}) {
+function filterAvailability(days: AvailabilityDay[] = [], filters: AvailabilityFilters = {},): AvailabilityDay[] {
     return (days || [])
         .map((day) => {
-            let appointmentSlots = Array.isArray(day.appointmentSlots)
+            let appointmentSlots: AppointmentSlot[] = Array.isArray(day.appointmentSlots)
                 ? [...day.appointmentSlots]
                 : [];
 
@@ -334,8 +363,10 @@ function filterAvailability(days = [], filters = {}) {
             }
 
             if (filters.afterTime) {
+                const afterTime = filters.afterTime;
+
                 appointmentSlots = appointmentSlots.filter(
-                    (slot) => slot.startTime >= filters.afterTime
+                    (slot) => slot.startTime >= afterTime
                 );
             }
 
@@ -347,7 +378,7 @@ function filterAvailability(days = [], filters = {}) {
         .filter((day) => day.appointmentSlots.length > 0);
 }
 
-function formatDateTime(dateStr, timeStr) {
+function formatDateTime(dateStr: string | null | undefined, timeStr: string | null | undefined) {
     if (!dateStr || !timeStr) return null;
 
     const date = new Date(`${dateStr}T${timeStr}`);

@@ -1,14 +1,56 @@
-import { chromium } from "playwright";
-import fs from "fs/promises";
-import path from "path";
+import {
+    chromium,
+    type BrowserContext,
+    type Page,
+} from "playwright";
+import fs from "node:fs/promises";
+import path from "node:path";
 
-let browserContext = null;
-let page = null;
+interface AvailabilityRequest {
+    storeNumber: string;
+    slotType: string;
+    startDate: string;
+    maxNumberOfDays?: number;
+    lineOfBusiness?: "OPTICAL" | "AUDIOLOGY";
+}
+
+export interface AppointmentSlot {
+    id: string;
+    clinicId: string;
+    slotType: string;
+    startTime: string;
+    endTime: string;
+    __typename?: string;
+}
+
+export interface AvailabilityDay {
+    date: string;
+    count: number;
+    appointmentSlots: AppointmentSlot[];
+    __typename?: string;
+}
+
+interface BrowserGraphQLResult {
+    ok: boolean;
+    status: number;
+    text: string;
+}
+
+interface AvailabilityGraphQLResponse {
+    data?: {
+        storeAppointmentSlots?: Array<{
+            availableSlots?: AvailabilityDay[];
+        }>;
+    };
+}
+
+let browserContext: BrowserContext | null = null;
+let page: Page | null = null;
 
 const PROFILE_DIR =
     process.env.BROWSER_PROFILE_DIR || path.resolve("data/browser-profile");
 
-function looksBlocked(url, title) {
+function looksBlocked(url: string, title: string): boolean {
     return /challenge|verify|captcha|cloudflare/i.test(`${url} ${title}`);
 }
 
@@ -16,7 +58,7 @@ async function ensureProfileDir() {
     await fs.mkdir(PROFILE_DIR, { recursive: true });
 }
 
-export async function ensureBrowser() {
+export async function ensureBrowser(): Promise<Page> {
     if (browserContext) {
         const pages = browserContext.pages();
         page = pages[0] || page || (await browserContext.newPage());
@@ -60,7 +102,7 @@ export async function fetchAvailabilityInBrowser({
                                                      startDate,
                                                      maxNumberOfDays = 42,
                                                      lineOfBusiness = "OPTICAL",
-                                                 }) {
+                                                 }: AvailabilityRequest): Promise<AvailabilityDay[]> {
     const page = await ensureBrowser();
 
     await page.bringToFront();
@@ -81,7 +123,7 @@ export async function fetchAvailabilityInBrowser({
         );
     }
 
-    const result = await page.evaluate(
+    const result = await page.evaluate<BrowserGraphQLResult, Required<AvailabilityRequest>>(
         async ({ storeNumber, slotType, startDate, maxNumberOfDays, lineOfBusiness }) => {
             const query = `
         query GetAvailableAppointmentSlots(
@@ -158,19 +200,15 @@ export async function fetchAvailabilityInBrowser({
         throw new Error(`GraphQL request failed: ${result.status}\n${result.text}`);
     }
 
-    const json = JSON.parse(result.text);
-    return json?.data?.storeAppointmentSlots?.[0]?.availableSlots ?? [];
+    const json = JSON.parse(result.text) as AvailabilityGraphQLResponse;
+    return json.data?.storeAppointmentSlots?.[0]?.availableSlots ?? [];
 }
 
-export function getExistingBrowser() {
-    if (!browserContext) return null;
-
-    const pages = browserContext.pages();
-
-    return {
-        context: browserContext,
-        page: pages[0] || page || null,
-    };
+export function getExistingBrowser(): {
+    browserContext: BrowserContext | null;
+    page: Page | null;
+} {
+    return { browserContext, page };
 }
 
 export async function closeBrowser() {
@@ -184,7 +222,10 @@ export async function closeBrowser() {
     return { ok: true };
 }
 
-export async function saveBrowserState() {
+export async function saveBrowserState(): Promise<{
+    ok: boolean;
+    error?: string;
+}> {
     if (!browserContext) {
         return { ok: false, error: "Browser is not open." };
     }
@@ -196,7 +237,17 @@ export async function saveBrowserState() {
     return { ok: true };
 }
 
-export async function getBrowserStatus() {
+export async function getBrowserStatus(): Promise<{
+    ok: boolean;
+    browserOpen: boolean;
+    ready?: boolean;
+    currentUrl?: string;
+    url?: string;
+    title?: string;
+    blocked?: boolean;
+    needsManualVerification?: boolean;
+    message: string;
+}> {
     const existing = getExistingBrowser();
 
     if (!existing?.page) {
