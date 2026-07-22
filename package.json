@@ -2,12 +2,17 @@
   "name": "availability_scraper",
   "version": "1.0.0",
   "description": "",
-  "main": "src/server.js",
+  "main": "dist/server.js",
   "scripts": {
-    "build": "node src/server.js",
-    "dev": "node src/server.js"
+    "dev": "tsx watch src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "start": "node dist/server.js"
   },
   "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^24.0.0",
+    "tsx": "^4.0.0",
     "typescript": "^5.5.3"
   },
   "private": true,
