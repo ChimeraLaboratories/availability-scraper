@@ -1,4 +1,6 @@
-import type { Page } from "playwright";
+import type {
+    Page,
+} from "playwright";
 
 import type {
     AvailabilityDay,
@@ -18,10 +20,30 @@ export async function fetchAvailabilityFromPage(
     page: Page,
     request: AvailabilityRequest,
 ): Promise<AvailabilityDay[]> {
-    const result = await executeAvailabilityRequest(
-        page,
-        request,
+    await page.bringToFront();
+
+    await page.waitForLoadState(
+        "domcontentloaded",
     );
+
+    const currentUrl =
+        page.url();
+
+    if (
+        !/specsavers\.co\.uk/i.test(
+            currentUrl,
+        )
+    ) {
+        throw new Error(
+            `Browser is not on the Specsavers site. Current URL: ${currentUrl}`,
+        );
+    }
+
+    const result =
+        await executeAvailabilityRequest(
+            page,
+            request,
+        );
 
     if (!result.ok) {
         throw new Error(
@@ -29,7 +51,8 @@ export async function fetchAvailabilityFromPage(
         );
     }
 
-    let parsed: AvailabilityGraphQLResponse;
+    let parsed:
+        AvailabilityGraphQLResponse;
 
     try {
         parsed = JSON.parse(
@@ -42,8 +65,11 @@ export async function fetchAvailabilityFromPage(
     }
 
     return (
-        parsed.data?.storeAppointmentSlots?.[0]
-            ?.availableSlots ?? []
+        parsed.data
+            ?.storeAppointmentSlots
+            ?.[0]
+            ?.availableSlots ??
+        []
     );
 }
 
@@ -53,64 +79,108 @@ async function executeAvailabilityRequest(
 ): Promise<BrowserGraphQLResult> {
     return page.evaluate(
         async (payload) => {
-            const response = await fetch(
-                "/graphql",
-                {
-                    method: "POST",
-                    headers: {
-                        "content-type": "application/json",
-                    },
-                    credentials: "include",
-                    body: JSON.stringify({
-                        query: `
-                            query StoreAppointmentSlots(
-                                $storeNumber: String!
-                                $slotType: String!
-                                $startDate: String!
-                                $maxNumberOfDays: Int!
-                                $lineOfBusiness: String!
-                            ) {
-                                storeAppointmentSlots(
-                                    storeNumber: $storeNumber
-                                    slotType: $slotType
-                                    startDate: $startDate
-                                    maxNumberOfDays: $maxNumberOfDays
-                                    lineOfBusiness: $lineOfBusiness
-                                ) {
-                                    availableSlots {
-                                        date
-                                        count
-                                        appointmentSlots {
-                                            id
-                                            clinicId
-                                            slotType
-                                            startTime
-                                            endTime
-                                            __typename
-                                        }
-                                        __typename
-                                    }
-                                }
+            const query = `
+                query GetAvailableAppointmentSlots(
+                    $storeNumbers: [String!]!,
+                    $slotsQuery: AvailableSlotsQueryInput!,
+                    $lineOfBusiness: LineOfBusiness!
+                ) {
+                    storeAppointmentSlots(
+                        storeNumbers: $storeNumbers
+                        lineOfBusiness: $lineOfBusiness
+                    ) {
+                        availableSlots(
+                            query: $slotsQuery
+                        ) {
+                            date
+                            count
+                            appointmentSlots {
+                                id
+                                clinicId
+                                slotType
+                                startTime
+                                endTime
+                                __typename
                             }
-                        `,
-                        variables: {
-                            storeNumber: payload.storeNumber,
-                            slotType: payload.slotType,
-                            startDate: payload.startDate,
-                            maxNumberOfDays:
-                                payload.maxNumberOfDays ?? 60,
-                            lineOfBusiness:
-                                payload.lineOfBusiness ??
-                                "OPTICAL",
+                            __typename
+                        }
+                        __typename
+                    }
+                }
+            `;
+
+            const response =
+                await fetch(
+                    "/graphql",
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "content-type":
+                                "application/json",
+
+                            "accept":
+                                "*/*",
+
+                            "apollographql-client-name":
+                                "nuxt-find-and-book",
+
+                            "apollographql-client-version":
+                                "1.1219.0",
+
+                            "x-specsavers-application-id":
+                                "nuxt-find-and-book/1.1219.0",
+
+                            "x-specsavers-market-id":
+                                "GB",
                         },
-                    }),
-                },
-            );
+
+                        credentials:
+                            "include",
+
+                        body:
+                            JSON.stringify({
+                                operationName:
+                                    "GetAvailableAppointmentSlots",
+
+                                query,
+
+                                variables: {
+                                    lineOfBusiness:
+                                        payload
+                                            .lineOfBusiness ??
+                                        "OPTICAL",
+
+                                    slotsQuery: {
+                                        maxNumberOfDays:
+                                            payload
+                                                .maxNumberOfDays ??
+                                            42,
+
+                                        slotType:
+                                        payload.slotType,
+
+                                        startDate:
+                                        payload.startDate,
+                                    },
+
+                                    storeNumbers: [
+                                        String(
+                                            payload
+                                                .storeNumber,
+                                        ),
+                                    ],
+                                },
+                            }),
+                    },
+                );
 
             return {
                 ok: response.ok,
-                status: response.status,
-                text: await response.text(),
+                status:
+                response.status,
+                text:
+                    await response.text(),
             };
         },
         request,
