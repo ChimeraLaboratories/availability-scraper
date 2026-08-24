@@ -19,6 +19,7 @@ import {
 import {
     errorHandler,
 } from "./middleware/errorHandler.js";
+import {manualAvailabilityRouter} from "./routes/manualAvailabilityRoutes.js";
 
 export const app = express();
 
@@ -32,6 +33,7 @@ app.use(
 
 app.use("/api", browserRouter);
 app.use("/api", dashboardRouter);
+app.use("/api", manualAvailabilityRouter);
 
 app.use("/api", notFoundHandler);
 
