@@ -1,14 +1,43 @@
-const statusEl = document.getElementById("status");
-const nextEl = document.getElementById("nextAvailable");
-const listEl = document.getElementById("list");
+const statusEl =
+    document.getElementById("status");
 
-const refreshBtn = document.getElementById("refreshBtn");
+const nextEl =
+    document.getElementById(
+        "nextAvailable",
+    );
 
-console.log("LOADED: App.js");
+const listEl =
+    document.getElementById("list");
 
-function setStatus(text, variant = "idle") {
+const refreshBtn =
+    document.getElementById(
+        "refreshBtn",
+    );
+
+console.log(
+    "LOADED: app.js",
+);
+
+const AUTO_REFRESH_INTERVAL =
+    60 * 1000;
+
+let isLoading = false;
+let refreshTimer = null;
+
+let previousCategoryState =
+    new Map();
+
+let hasCompletedInitialLoad =
+    false;
+
+function setStatus(
+    text,
+    variant = "idle",
+) {
     statusEl.textContent = text;
-    statusEl.className = `status-pill status-${variant}`;
+
+    statusEl.className =
+        `status-pill status-${variant}`;
 }
 
 function escapeHtml(value) {
@@ -20,197 +49,452 @@ function escapeHtml(value) {
         .replaceAll("'", "&#39;");
 }
 
-function renderNextAvailable(nextAvailableOverall) {
-    if (!nextAvailableOverall) {
-        nextEl.className = "next-available-empty";
-        nextEl.innerHTML = "No appointments found.";
+function formatLastUpdated(
+    isoDate,
+) {
+    if (!isoDate) {
+        return null;
+    }
+
+    const date =
+        new Date(isoDate);
+
+    if (
+        Number.isNaN(
+            date.getTime(),
+        )
+    ) {
+        return null;
+    }
+
+    return date.toLocaleTimeString(
+        "en-GB",
+        {
+            hour: "2-digit",
+            minute: "2-digit",
+        },
+    );
+}
+
+function renderNextAvailable(
+    nextAvailableOverall,
+) {
+    if (!nextEl) {
         return;
     }
 
-    nextEl.className = "next-available-box";
+    if (!nextAvailableOverall) {
+        nextEl.className =
+            "next-available-empty";
+
+        nextEl.innerHTML =
+            "No appointments found.";
+
+        return;
+    }
+
+    nextEl.className =
+        "next-available-box";
+
     nextEl.innerHTML = `
         <div>
-            <p class="next-title">${escapeHtml(nextAvailableOverall.label)}</p>
+            <p class="next-title">
+                ${escapeHtml(
+        nextAvailableOverall.label,
+    )}
+            </p>
+
             <p class="next-meta">
-                Store ${escapeHtml(nextAvailableOverall.storeNumber || "")}
+                Next available
             </p>
         </div>
-        <div class="next-time">${escapeHtml(nextAvailableOverall.nextAvailableLabel)}</div>
+
+        <div class="next-time">
+            ${escapeHtml(
+        nextAvailableOverall
+            .nextAvailableLabel,
+    )}
+        </div>
     `;
 }
 
-function buildBadge(text, variant = "neutral") {
-    return `<span class="badge badge-${variant}">${escapeHtml(text)}</span>`;
+function buildBadge(
+    text,
+    variant = "neutral",
+) {
+    return `
+        <span
+            class="badge badge-${variant}"
+        >
+            ${escapeHtml(text)}
+        </span>
+    `;
 }
 
-function renderCategories(categories) {
+function getCategoryState(
+    category,
+) {
+    return JSON.stringify({
+        nextAvailableDate:
+            category.nextAvailableDate ??
+            null,
+
+        nextAvailableTime:
+            category.nextAvailableTime ??
+            null,
+
+        totalDays:
+            category.totalDays ?? 0,
+
+        totalSlots:
+            category.totalSlots ?? 0,
+
+        error:
+            category.error ?? null,
+    });
+}
+
+function renderCategories(
+    categories,
+) {
     if (!categories?.length) {
-        listEl.innerHTML =
-            `<div class="empty-state">No categories available.</div>`;
+        listEl.innerHTML = `
+            <div class="empty-state">
+                No categories available.
+            </div>
+        `;
+
+        previousCategoryState =
+            new Map();
+
+        hasCompletedInitialLoad =
+            true;
 
         return;
     }
 
-    listEl.innerHTML = categories
-        .map((category) => {
-            const isManual =
-                category.lineOfBusiness === "MANUAL";
+    const newCategoryState =
+        new Map();
 
-            const hasError =
-                Boolean(category.error);
+    const changedKeys =
+        new Set();
 
-            const hasAvailability =
-                Boolean(
-                    category.nextAvailableLabel,
-                );
+    for (
+        const category of
+        categories
+        ) {
+        const state =
+            getCategoryState(
+                category,
+            );
 
-            let availabilityText =
-                "No Availability";
+        newCategoryState.set(
+            category.key,
+            state,
+        );
 
-            if (hasError) {
-                availabilityText =
-                    category.error;
-            } else if (hasAvailability) {
-                availabilityText =
-                    category.nextAvailableLabel;
-            }
+        if (
+            hasCompletedInitialLoad &&
+            previousCategoryState.has(
+                category.key,
+            ) &&
+            previousCategoryState.get(
+                category.key,
+            ) !== state
+        ) {
+            changedKeys.add(
+                category.key,
+            );
+        }
+    }
 
-            const badges = [];
+    listEl.innerHTML =
+        categories
+            .map((category) => {
+                const isManual =
+                    category
+                        .lineOfBusiness ===
+                    "MANUAL";
 
-            if (!isManual) {
-                badges.push(
-                    buildBadge(
-                        `${category.totalDays || 0} days`,
-                        "neutral",
-                    ),
-                );
+                const hasError =
+                    Boolean(
+                        category.error,
+                    );
 
-                badges.push(
-                    buildBadge(
-                        `${category.totalSlots || 0} slots`,
-                        hasAvailability
-                            ? "success"
-                            : "warning",
-                    ),
-                );
-            }
+                const hasAvailability =
+                    Boolean(
+                        category
+                            .nextAvailableLabel,
+                    );
 
-            if (hasError) {
-                badges.push(
-                    buildBadge(
-                        "Error",
-                        "danger",
-                    ),
-                );
-            } else if (hasAvailability) {
-                badges.push(
-                    buildBadge(
-                        "Available",
-                        "success",
-                    ),
-                );
-            } else {
-                badges.push(
-                    buildBadge(
-                        "No Availability",
-                        "warning",
-                    ),
-                );
-            }
+                let availabilityText =
+                    "No Availability";
 
-            const rowClass =
-                !hasAvailability && !hasError
-                    ? "availability-row no-availability"
-                    : "availability-row";
+                if (hasError) {
+                    availabilityText =
+                        category.error;
+                } else if (
+                    hasAvailability
+                ) {
+                    availabilityText =
+                        category
+                            .nextAvailableLabel;
+                }
 
-            const subtitle =
-                isManual
-                    ? "Manual update"
-                    : `
-                        ${escapeHtml(
-                        category.lineOfBusiness || "",
-                    )}
-                        ${
-                        category.slotType
-                            ? `• ${escapeHtml(
-                                category.slotType,
-                            )}`
-                            : ""
-                    }
-                    `;
+                const badges = [];
 
-            return `
-                <div class="${rowClass}">
-                    <div class="row-main">
-                        <p class="row-title">
-                            ${escapeHtml(category.label)}
-                        </p>
+                if (!isManual) {
+                    badges.push(
+                        buildBadge(
+                            `${
+                                category
+                                    .totalDays ??
+                                0
+                            } days`,
+                            "neutral",
+                        ),
+                    );
 
-                        <p class="row-subtitle">
-                            ${subtitle}
-                        </p>
+                    badges.push(
+                        buildBadge(
+                            `${
+                                category
+                                    .totalSlots ??
+                                0
+                            } slots`,
+                            hasAvailability
+                                ? "success"
+                                : "warning",
+                        ),
+                    );
+                }
+
+                if (hasError) {
+                    badges.push(
+                        buildBadge(
+                            "Error",
+                            "danger",
+                        ),
+                    );
+                } else if (
+                    hasAvailability
+                ) {
+                    badges.push(
+                        buildBadge(
+                            "Available",
+                            "success",
+                        ),
+                    );
+                } else {
+                    badges.push(
+                        buildBadge(
+                            "No Availability",
+                            "warning",
+                        ),
+                    );
+                }
+
+                const rowClasses = [
+                    "availability-row",
+                ];
+
+                if (
+                    !hasAvailability &&
+                    !hasError
+                ) {
+                    rowClasses.push(
+                        "no-availability",
+                    );
+                }
+
+                if (
+                    changedKeys.has(
+                        category.key,
+                    )
+                ) {
+                    rowClasses.push(
+                        "availability-updated",
+                    );
+                }
+
+                const rowClass =
+                    rowClasses.join(" ");
+
+                return `
+                    <div
+                        class="${rowClass}"
+                        data-category-key="${escapeHtml(
+                    category.key,
+                )}"
+                    >
+                        <div class="row-main">
+                            <p class="row-title">
+                                ${escapeHtml(
+                    category.label,
+                )}
+                            </p>
+                        </div>
+
+                        <div class="row-next">
+                            <span
+                                class="row-next-label"
+                            >
+                                Next available
+                            </span>
+
+                            <span
+                                class="row-next-value"
+                            >
+                                ${escapeHtml(
+                    availabilityText,
+                )}
+                            </span>
+                        </div>
+
+                        <div class="row-badges">
+                            ${badges.join("")}
+                        </div>
                     </div>
+                `;
+            })
+            .join("");
 
-                    <div class="row-next">
-                        <span class="row-next-label">
-                            Next available
-                        </span>
+    previousCategoryState =
+        newCategoryState;
 
-                        <span class="row-next-value">
-                            ${escapeHtml(availabilityText)}
-                        </span>
-                    </div>
+    hasCompletedInitialLoad =
+        true;
+}
 
-                    <div class="row-badges">
-                        ${badges.join("")}
-                    </div>
-                </div>
-            `;
-        })
-        .join("");
+function showUpdateSuccess() {
+    document.body.classList.remove(
+        "dashboard-updating",
+    );
+
+    document.body.classList.add(
+        "dashboard-updated",
+    );
+
+    setTimeout(() => {
+        document.body.classList.remove(
+            "dashboard-updated",
+        );
+    }, 1200);
 }
 
 async function loadDashboard() {
+    setStatus(
+        "Updating...",
+        "loading",
+    );
+
+    document.body.classList.add(
+        "dashboard-updating",
+    );
+
+    refreshBtn.disabled = true;
+
     try {
-        setStatus("Loading availability...", "loading");
+        const response =
+            await fetch(
+                "/api/dashboard",
+                {
+                    cache: "no-store",
+                },
+            );
 
-        const response = await fetch("/api/dashboard");
-        const data = await response.json();
+        const data =
+            await response.json();
 
-        console.log("DASHBOARD DATA:", data);
-        console.table(data.categories?.map(c => ({
-            label: c.label,
-            totalDays: c.totalDays,
-            totalSlots: c.totalSlots,
-            nextAvailableLabel: c.nextAvailableLabel,
-            nextAvailableDate: c.nextAvailableDate,
-            nextAvailableTime: c.nextAvailableTime,
-            firstDay: c.days?.[0]?.date,
-            firstDaySlots: c.days?.[0]?.appointmentSlots?.length
-        })));
+        console.log(
+            "DASHBOARD DATA:",
+            data,
+        );
 
         if (!response.ok) {
-            new Error(data.error || "Failed to load dashboard");
+            new Error(
+                data.error ||
+                "Failed to load dashboard",
+            );
         }
-        
-        renderCategories(data.categories || []);
-        const refreshedAt = new Date().toLocaleTimeString("en-GB",
-            {
-                hour: "2-digit",
-                minute: "2-digit",
-            });
 
-        setStatus(`Updated at ${refreshedAt}`, "success");
+        renderCategories(
+            data.categories || [],
+        );
+
+        renderNextAvailable(
+            data.nextAvailableOverall,
+        );
+
+        const lastUpdated =
+            formatLastUpdated(
+                data.lastUpdatedAt,
+            );
+
+        if (
+            data.schedule &&
+            !data.schedule.active
+        ) {
+            if (lastUpdated) {
+                setStatus(
+                    `Paused · Last checked ${lastUpdated} · Resumes ${data.schedule.resumesAt}`,
+                    "idle",
+                );
+            } else {
+                setStatus(
+                    `Paused · Resumes ${data.schedule.resumesAt}`,
+                    "idle",
+                );
+            }
+        } else {
+            setStatus(
+                lastUpdated
+                    ? `Updated ${lastUpdated}`
+                    : "Up to date",
+                "success",
+            );
+        }
+
+        showUpdateSuccess();
     } catch (error) {
         console.error(error);
-        listEl.innerHTML = `<div class="empty-state">${escapeHtml(error.message || "Unknown error")}</div>`;
-        setStatus("Load failed", "error");
+
+        document.body.classList.remove(
+            "dashboard-updating",
+        );
+
+        listEl.innerHTML = `
+            <div class="empty-state">
+                ${escapeHtml(
+            error instanceof Error
+                ? error.message
+                : "Unknown error",
+        )}
+            </div>
+        `;
+
+        setStatus(
+            "Load failed",
+            "error",
+        );
+    } finally {
+        refreshBtn.disabled = false;
     }
 }
 
-const AUTO_REFRESH_INTERVAL = 60 * 1000;
+function scheduleNextRefresh() {
+    clearTimeout(
+        refreshTimer,
+    );
 
-let isLoading = false;
+    refreshTimer =
+        setTimeout(
+            () => {
+                void refreshDashboard();
+            },
+            AUTO_REFRESH_INTERVAL,
+        );
+}
 
 async function refreshDashboard() {
     if (isLoading) {
@@ -219,19 +503,24 @@ async function refreshDashboard() {
 
     isLoading = true;
 
+    clearTimeout(
+        refreshTimer,
+    );
+
     try {
         await loadDashboard();
     } finally {
         isLoading = false;
+
+        scheduleNextRefresh();
     }
 }
 
-refreshBtn.addEventListener("click", async () => {
-    await loadDashboard();
-});
+refreshBtn.addEventListener(
+    "click",
+    async () => {
+        await refreshDashboard();
+    },
+);
 
 void refreshDashboard();
-
-setInterval(() => {
-    void refreshDashboard();
-}, AUTO_REFRESH_INTERVAL);
