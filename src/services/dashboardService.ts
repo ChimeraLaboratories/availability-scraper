@@ -19,6 +19,7 @@ import {
     getErrorMessage,
 } from "../utils/errors.js";
 import {fetchAvailabilityInBrowser} from "../browser/availabilityService.js";
+import {getManualCategoriesWithValues} from "./manualAvailabilityService.js";
 
 export async function getDashboardAvailability(
     storeNumber: string,
@@ -89,6 +90,47 @@ export async function getDashboardAvailability(
                 days: [],
             });
         }
+    }
+
+    const manualCategories =
+        await getManualCategoriesWithValues();
+
+    for (const category of manualCategories) {
+        results.push({
+            key: category.key,
+            label: category.label,
+
+            lineOfBusiness: "MANUAL",
+            slotType: "MANUAL",
+            filters: {},
+
+            nextAvailableDate:
+            category.nextAvailableDate,
+
+            nextAvailableTime:
+            category.nextAvailableTime,
+
+            nextAvailableLabel:
+                category.nextAvailableDate &&
+                category.nextAvailableTime
+                    ? formatDateTime(
+                        category.nextAvailableDate,
+                        category.nextAvailableTime,
+                    )
+                    : null,
+
+            totalDays:
+                category.nextAvailableDate
+                    ? 1
+                    : 0,
+
+            totalSlots:
+                category.nextAvailableDate
+                    ? 1
+                    : 0,
+
+            days: [],
+        });
     }
 
     const nextAvailableOverall =

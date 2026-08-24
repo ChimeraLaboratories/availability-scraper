@@ -45,49 +45,120 @@ function buildBadge(text, variant = "neutral") {
 
 function renderCategories(categories) {
     if (!categories?.length) {
-        listEl.innerHTML = `<div class="empty-state">No categories available.</div>`;
+        listEl.innerHTML =
+            `<div class="empty-state">No categories available.</div>`;
+
         return;
     }
 
     listEl.innerHTML = categories
         .map((category) => {
-            const hasError = Boolean(category.error);
-            const hasAvailability = Boolean(category.nextAvailableLabel);
+            const isManual =
+                category.lineOfBusiness === "MANUAL";
 
-            let availabilityText = "No Availability";
-            if (hasError) availabilityText = category.error;
-            if (hasAvailability) availabilityText = category.nextAvailableLabel;
+            const hasError =
+                Boolean(category.error);
 
-            const badges = [
-                buildBadge(`${category.totalDays || 0} days`, "neutral"),
-                buildBadge(`${category.totalSlots || 0} slots`, hasAvailability ? "success" : "warning"),
-            ];
+            const hasAvailability =
+                Boolean(
+                    category.nextAvailableLabel,
+                );
+
+            let availabilityText =
+                "No Availability";
 
             if (hasError) {
-                badges.push(buildBadge("Error", "danger"));
+                availabilityText =
+                    category.error;
             } else if (hasAvailability) {
-                badges.push(buildBadge("Available", "success"));
-            } else {
-                badges.push(buildBadge("No Availability", "warning"));
+                availabilityText =
+                    category.nextAvailableLabel;
             }
 
-            const rowClass = !hasAvailability && !hasError
-                ? "availability-row no-availability"
-                : "availability-row";
+            const badges = [];
+
+            if (!isManual) {
+                badges.push(
+                    buildBadge(
+                        `${category.totalDays || 0} days`,
+                        "neutral",
+                    ),
+                );
+
+                badges.push(
+                    buildBadge(
+                        `${category.totalSlots || 0} slots`,
+                        hasAvailability
+                            ? "success"
+                            : "warning",
+                    ),
+                );
+            }
+
+            if (hasError) {
+                badges.push(
+                    buildBadge(
+                        "Error",
+                        "danger",
+                    ),
+                );
+            } else if (hasAvailability) {
+                badges.push(
+                    buildBadge(
+                        "Available",
+                        "success",
+                    ),
+                );
+            } else {
+                badges.push(
+                    buildBadge(
+                        "No Availability",
+                        "warning",
+                    ),
+                );
+            }
+
+            const rowClass =
+                !hasAvailability && !hasError
+                    ? "availability-row no-availability"
+                    : "availability-row";
+
+            const subtitle =
+                isManual
+                    ? "Manual update"
+                    : `
+                        ${escapeHtml(
+                        category.lineOfBusiness || "",
+                    )}
+                        ${
+                        category.slotType
+                            ? `• ${escapeHtml(
+                                category.slotType,
+                            )}`
+                            : ""
+                    }
+                    `;
 
             return `
                 <div class="${rowClass}">
                     <div class="row-main">
-                        <p class="row-title">${escapeHtml(category.label)}</p>
+                        <p class="row-title">
+                            ${escapeHtml(category.label)}
+                        </p>
+
                         <p class="row-subtitle">
-                            ${escapeHtml(category.lineOfBusiness || "")}
-                            ${category.slotType ? `• ${escapeHtml(category.slotType)}` : ""}
+                            ${subtitle}
                         </p>
                     </div>
 
                     <div class="row-next">
-                        <span class="row-next-label">Next available</span>
-                        <span class="row-next-value">${escapeHtml(availabilityText)}</span>
+                        <span class="row-next-label">
+                            Next available
+                        </span>
+
+                        <span class="row-next-value">
+                            ${escapeHtml(availabilityText)}
+                        </span>
                     </div>
 
                     <div class="row-badges">
@@ -98,6 +169,7 @@ function renderCategories(categories) {
         })
         .join("");
 }
+
 async function loadDashboard() {
     try {
         setStatus("Loading availability...", "loading");
@@ -118,7 +190,7 @@ async function loadDashboard() {
         })));
 
         if (!response.ok) {
-            throw new Error(data.error || "Failed to load dashboard");
+            new Error(data.error || "Failed to load dashboard");
         }
         
         renderCategories(data.categories || []);
