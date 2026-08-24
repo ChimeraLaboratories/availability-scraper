@@ -46,7 +46,7 @@ const publicDirectory = path.resolve(
 export const appConfig = {
     host:
         process.env.HOST ??
-        "localhost",
+        "0.0.0.0",
 
     port: parsePort(
         process.env.PORT,
