@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1"
+  >
+
+  <title>Availability Admin</title>
+
+  <link
+          rel="stylesheet"
+          href="/admin/admin.css"
+  >
+</head>
+
+<body>
+<main class="admin">
+  <header>
+    <h1>
+      Availability Admin
+    </h1>
+
+    <p>
+      Update manually maintained
+      appointment availability.
+    </p>
+  </header>
+
+  <section class="card">
+    <label>
+      Category
+
+      <select id="category">
+        <option value="">
+          Select category
+        </option>
+      </select>
+    </label>
+
+    <div class="fields">
+      <label>
+        Next available date
+
+        <input
+                id="date"
+                type="date"
+        >
+      </label>
+
+      <label>
+        Next available time
+
+        <input
+                id="time"
+                type="time"
+        >
+      </label>
+    </div>
+
+    <div class="actions">
+      <button
+              id="noAvailability"
+              type="button"
+              class="secondary"
+      >
+        No availability
+      </button>
+
+      <button
+              id="save"
+              type="button"
+      >
+        Save
+      </button>
+    </div>
+
+    <p
+            id="status"
+            aria-live="polite"
+    ></p>
+  </section>
+
+  <section class="card">
+    <h2>
+      Current values
+    </h2>
+
+    <div id="current"></div>
+  </section>
+</main>
+
+<script
+        type="module"
+        src="/admin/admin.js"
+></script>
+</body>
+</html>

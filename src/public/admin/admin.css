@@ -1,0 +1,138 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #f3f6fa;
+    color: #17243a;
+
+    font-family:
+            system-ui,
+            -apple-system,
+            "Segoe UI",
+            sans-serif;
+}
+
+.admin {
+    width: min(
+            calc(100% - 32px),
+            700px
+    );
+
+    margin: 32px auto;
+}
+
+header {
+    margin-bottom: 22px;
+}
+
+header h1 {
+    margin: 0;
+}
+
+header p {
+    margin: 6px 0 0;
+    color: #67758b;
+}
+
+.card {
+    margin-bottom: 18px;
+    padding: 24px;
+
+    background: white;
+
+    border:
+            1px solid #dbe2ec;
+
+    border-radius: 14px;
+}
+
+label {
+    display: grid;
+    gap: 7px;
+
+    margin-bottom: 18px;
+
+    font-weight: 600;
+}
+
+input,
+select,
+button {
+    min-height: 46px;
+
+    font: inherit;
+}
+
+input,
+select {
+    width: 100%;
+    padding: 0 12px;
+
+    background: white;
+
+    border:
+            1px solid #ccd5e1;
+
+    border-radius: 8px;
+}
+
+.fields {
+    display: grid;
+
+    grid-template-columns:
+        1fr 1fr;
+
+    gap: 16px;
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+button {
+    padding: 0 18px;
+
+    border: 0;
+    border-radius: 8px;
+
+    background: #2764dc;
+    color: white;
+
+    font-weight: 700;
+    cursor: pointer;
+}
+
+button.secondary {
+    background: #e7ecf3;
+    color: #27364c;
+}
+
+#status {
+    min-height: 20px;
+}
+
+.current-row {
+    display: flex;
+    justify-content: space-between;
+
+    gap: 20px;
+
+    padding: 13px 0;
+
+    border-bottom:
+            1px solid #edf0f4;
+}
+
+@media (max-width: 550px) {
+    .fields {
+        grid-template-columns: 1fr;
+    }
+
+    .actions {
+        flex-direction: column-reverse;
+    }
+}
