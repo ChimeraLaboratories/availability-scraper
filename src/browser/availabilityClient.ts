@@ -75,6 +75,23 @@ export async function fetchAvailabilityFromPage(
         );
     }
 
+    if (
+        parsed.errors &&
+        parsed.errors.length > 0
+    ) {
+        const message =
+            parsed.errors
+                .map(
+                    (error) =>
+                        error.message,
+                )
+                .join(", ");
+
+        throw new Error(
+            `GraphQL availability request failed: ${message}`,
+        );
+    }
+
     return (
         parsed.data
             ?.storeAppointmentSlots
@@ -84,12 +101,65 @@ export async function fetchAvailabilityFromPage(
     );
 }
 
+function addDays(
+    dateString: string,
+    days: number,
+): string {
+    const date =
+        new Date(
+            `${dateString}T00:00:00Z`,
+        );
+
+    date.setUTCDate(
+        date.getUTCDate() + days,
+    );
+
+    return date
+        .toISOString()
+        .slice(0, 10);
+}
+
 async function executeAvailabilityRequest(
     page: Page,
     request: AvailabilityRequest,
 ): Promise<BrowserGraphQLResult> {
+    const isAudiology =
+        request.lineOfBusiness === "AUDIOLOGY";
+
+    const audiologyStoreNumber =
+        process.env
+            .SPECSAVERS_AUDIOLOGY_STORE_NUMBER
+            ?.trim();
+
+    if (
+        isAudiology &&
+        !audiologyStoreNumber
+    ) {
+        throw new Error(
+            "Missing SPECSAVERS_AUDIOLOGY_STORE_NUMBER",
+        );
+    }
+
+    const storeNumber =
+        isAudiology
+            ? audiologyStoreNumber!
+            : request.storeNumber;
+
+    const maxEndDate =
+        isAudiology
+            ? addDays(
+                request.startDate,
+                30,
+            )
+            : null;
+
     return page.evaluate(
-        async (payload) => {
+        async ({
+                   payload,
+                   storeNumber,
+                   isAudiology,
+                   maxEndDate,
+               }) => {
             const query = `
                 query GetAvailableAppointmentSlots(
                     $storeNumbers: [String!]!,
@@ -120,6 +190,29 @@ async function executeAvailabilityRequest(
                 }
             `;
 
+            const slotsQuery =
+                isAudiology
+                    ? {
+                        maxEndDate,
+                        maxNumberOfDays: 1,
+                        slotType:
+                        payload.slotType,
+                        startDate:
+                        payload.startDate,
+                    }
+                    : {
+                        maxNumberOfDays:
+                            payload
+                                .maxNumberOfDays ??
+                            42,
+
+                        slotType:
+                        payload.slotType,
+
+                        startDate:
+                        payload.startDate,
+                    };
+
             const response =
                 await fetch(
                     "/graphql",
@@ -130,8 +223,7 @@ async function executeAvailabilityRequest(
                             "content-type":
                                 "application/json",
 
-                            "accept":
-                                "*/*",
+                            accept: "*/*",
 
                             "apollographql-client-name":
                                 "nuxt-find-and-book",
@@ -162,23 +254,11 @@ async function executeAvailabilityRequest(
                                             .lineOfBusiness ??
                                         "OPTICAL",
 
-                                    slotsQuery: {
-                                        maxNumberOfDays:
-                                            payload
-                                                .maxNumberOfDays ??
-                                            42,
-
-                                        slotType:
-                                        payload.slotType,
-
-                                        startDate:
-                                        payload.startDate,
-                                    },
+                                    slotsQuery,
 
                                     storeNumbers: [
                                         String(
-                                            payload
-                                                .storeNumber,
+                                            storeNumber,
                                         ),
                                     ],
                                 },
@@ -194,6 +274,11 @@ async function executeAvailabilityRequest(
                     await response.text(),
             };
         },
-        request,
+        {
+            payload: request,
+            storeNumber,
+            isAudiology,
+            maxEndDate,
+        },
     );
 }

@@ -58,6 +58,9 @@ export const appConfig = {
             process.env.SPECSAVERS_STORE,
         ),
 
+    specsaversAudiologyStore:
+    requireEnvironmentVariable("SPECSAVERS_AUDIOLOGY_STORE_NUMBER", process.env.SPECSAVERS_AUDIOLOGY_STORE_NUMBER),
+
     specsaversCookie:
         requireEnvironmentVariable(
             "SPECSAVERS_COOKIE",

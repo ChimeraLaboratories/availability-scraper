@@ -24,10 +24,18 @@ export interface AvailabilityDay {
     __typename?: string;
 }
 
+export interface AvailabilityGraphQLError {
+    message: string;
+    path?: string[];
+    extensions?: unknown;
+}
+
 export interface AvailabilityGraphQLResponse {
     data?: {
         storeAppointmentSlots?: Array<{
             availableSlots?: AvailabilityDay[];
         }>;
-    };
+    } | null;
+
+    errors?: AvailabilityGraphQLError[];
 }
