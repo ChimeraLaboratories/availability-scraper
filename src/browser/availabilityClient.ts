@@ -92,6 +92,10 @@ export async function fetchAvailabilityFromPage(
         );
     }
 
+    if (parsed.errors && parsed.errors.length > 0) {
+
+    }
+
     return (
         parsed.data
             ?.storeAppointmentSlots

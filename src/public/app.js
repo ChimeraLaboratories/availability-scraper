@@ -194,7 +194,13 @@ async function loadDashboard() {
         }
         
         renderCategories(data.categories || []);
-        setStatus("Up to date", "success");
+        const refreshedAt = new Date().toLocaleTimeString("en-GB",
+            {
+                hour: "2-digit",
+                minute: "2-digit",
+            });
+
+        setStatus(`Updated at ${refreshedAt}`, "success");
     } catch (error) {
         console.error(error);
         listEl.innerHTML = `<div class="empty-state">${escapeHtml(error.message || "Unknown error")}</div>`;
@@ -202,6 +208,30 @@ async function loadDashboard() {
     }
 }
 
+const AUTO_REFRESH_INTERVAL = 60 * 1000;
+
+let isLoading = false;
+
+async function refreshDashboard() {
+    if (isLoading) {
+        return;
+    }
+
+    isLoading = true;
+
+    try {
+        await loadDashboard();
+    } finally {
+        isLoading = false;
+    }
+}
+
 refreshBtn.addEventListener("click", async () => {
     await loadDashboard();
 });
+
+void refreshDashboard();
+
+setInterval(() => {
+    void refreshDashboard();
+}, AUTO_REFRESH_INTERVAL);
