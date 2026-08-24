@@ -7,6 +7,8 @@ RUN npm install
 
 COPY . .
 
+RUN npm run build
+
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     xvfb \
     fluxbox \
@@ -31,7 +33,7 @@ RUN mkdir -p /tmp/.X11-unix
 COPY docker/start.sh /start.sh
 RUN chmod +x /start.sh
 
-EXPOSE 3001
+EXPOSE 3004
 EXPOSE 6080
 EXPOSE 5900
 
