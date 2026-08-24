@@ -48,4 +48,15 @@ export interface DashboardResponse {
         | null;
 
     categories: DashboardCategoryResult[];
+
+    schedule: {
+        active: boolean;
+        currentTime: string;
+        currentDay: string;
+        startTime: string;
+        stopTime: string;
+        resumesAt: string | null;
+    };
+
+    lastUpdatedAt: string | null;
 }
