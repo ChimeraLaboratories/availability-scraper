@@ -11,6 +11,13 @@ export const dashboardCategories: DashboardCategory[] = [
         filters: {},
     },
     {
+        key: "adult-eye-test-weekend",
+        label: "Adult Eye Test - Weekend",
+        lineOfBusiness: "OPTICAL",
+        slotType: "ADULT_EYE_TEST",
+        filters: {weekendsOnly: true},
+    },
+    {
         key: "child-eye-test-weekend",
         label: "Child Eye Test - Weekend",
         lineOfBusiness: "OPTICAL",
