@@ -7,7 +7,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     x11vnc \
     novnc \
     websockify \
-    socat \
+    nginx \
     ca-certificates \
     tzdata \
  && rm -rf /var/lib/apt/lists/*
@@ -23,8 +23,9 @@ ENV NOVNC_PORT=6080
 
 RUN mkdir -p /browser-profile /tmp/.X11-unix
 
+COPY docker/browser/cdp-nginx.conf /etc/nginx/conf.d/cdp.conf
 COPY docker/browser/start.sh /start.sh
-RUN chmod +x /start.sh
+RUN rm -f /etc/nginx/sites-enabled/default && chmod +x /start.sh
 
 EXPOSE 5900 6080 9222
 
