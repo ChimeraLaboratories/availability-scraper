@@ -168,11 +168,11 @@ body {
 
     flex: 0 0 auto;
 
-    min-height: 58px;
+    min-height: 50px;
 
     padding:
-            10px
-            18px;
+            6px
+            16px;
 
     border-bottom:
             1px solid #e5eaf1;
@@ -196,15 +196,15 @@ body {
     align-items: center;
     justify-content: center;
 
-    min-height: 56px;
+    min-height: 44px;
 
     padding:
-            12px
-            22px;
+            8px
+            18px;
 
     border-radius: 999px;
 
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 800;
 
     letter-spacing: 0.01em;
@@ -289,23 +289,27 @@ body {
     overflow: hidden;
 }
 
-/* Each row shares the remaining available height */
+/*
+ * Fixed right-hand column means the appointment
+ * time stays in exactly the same place regardless
+ * of whether UPDATED is visible.
+ */
 .availability-row {
     flex: 1 1 0;
 
     display: grid;
 
     grid-template-columns:
-        minmax(220px, 1fr)
-        minmax(360px, 1.3fr)
-        minmax(280px, auto);
+        minmax(300px, 32%)
+        minmax(420px, 1fr)
+        440px;
 
     align-items: center;
 
     min-height: 0;
 
     padding:
-            6px
+            3px
             18px;
 
     border-bottom:
@@ -332,11 +336,41 @@ body {
 
     color: #0f172a;
 
-    font-size: 20px;
+    font-size:
+            clamp(
+                    16px,
+                    1.65vw,
+                    20px
+            );
+
     font-weight: 750;
 
-    line-height: 1.15;
+    line-height: 1.05;
 }
+
+.header-date {
+    display: inline-flex;
+    align-items: center;
+
+    margin-left: 18px;
+    padding-left: 18px;
+
+    border-left:
+            2px solid #cbd5e1;
+
+    color: #334155;
+
+    font-size: 21px;
+    font-weight: 700;
+
+    line-height: 1;
+
+    white-space: nowrap;
+}
+
+/* --------------------------------------------------
+   NEXT AVAILABLE
+-------------------------------------------------- */
 
 .row-next {
     display: flex;
@@ -345,13 +379,13 @@ body {
 
     min-width: 0;
 
-    gap: 2px;
+    gap: 0;
 
-    padding-right: 14px;
+    padding-right: 16px;
 }
 
 .row-next-label {
-    color: #8190a8;
+    color: #64748b;
 
     font-size: 12px;
     font-weight: 750;
@@ -359,24 +393,41 @@ body {
     line-height: 1;
 
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.055em;
+
+    margin-bottom: 2px;
 }
 
 .row-next-value {
     color: #0f172a;
 
-    font-size: 18px;
+    font-size:
+            clamp(
+                    17px,
+                    1.7vw,
+                    20px
+            );
+
     font-weight: 750;
 
-    line-height: 1.2;
+    line-height: 1.05;
+
+    white-space: nowrap;
 }
 
+/* --------------------------------------------------
+   RIGHT-HAND BADGES
+-------------------------------------------------- */
+
 .row-badges {
+    position: relative;
+
+    width: 440px;
+    min-width: 440px;
+
     display: flex;
     align-items: center;
     justify-content: flex-end;
-
-    min-width: 280px;
 
     gap: 7px;
 }
@@ -390,11 +441,11 @@ body {
     align-items: center;
     justify-content: center;
 
-    min-height: 34px;
+    min-height: 30px;
 
     padding:
-            6px
-            11px;
+            5px
+            10px;
 
     border-radius: 999px;
 
@@ -435,6 +486,117 @@ body {
     color: #b91c1c;
 
     border-color: #fecaca;
+}
+
+/* --------------------------------------------------
+   UPDATED OVERLAY
+-------------------------------------------------- */
+
+/*
+ * This sits directly over the normal Available pill.
+ * It does NOT take up any extra space in the row.
+ */
+.update-detail-badge {
+    position: absolute;
+
+    right: 0;
+    top: 50%;
+
+    width: 92px;
+    height: 30px;
+
+    transform:
+            translateY(-50%);
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0;
+
+    border-radius: 999px;
+
+    background: #2563eb;
+    color: #ffffff;
+
+    border:
+            1px solid #1d4ed8;
+
+    font-size: 12px;
+    font-weight: 800;
+
+    line-height: 1;
+
+    letter-spacing: 0.03em;
+
+    white-space: nowrap;
+
+    box-shadow:
+            0 3px 10px
+            rgba(37, 99, 235, 0.25);
+
+    z-index: 10;
+
+    pointer-events: none;
+
+    animation:
+            updatedOverlay
+            10s
+            ease-out
+            forwards;
+}
+
+.row-badges > .badge:last-of-type {
+    width: 92px;
+
+    flex:
+            0
+            0
+            92px;
+}
+
+@keyframes updatedOverlay {
+    0% {
+        opacity: 0;
+
+        transform:
+                translateY(-50%)
+                scale(0.82);
+    }
+
+    5% {
+        opacity: 1;
+
+        transform:
+                translateY(-50%)
+                scale(1.08);
+    }
+
+    10% {
+        opacity: 1;
+
+        transform:
+                translateY(-50%)
+                scale(1);
+    }
+
+    85% {
+        opacity: 1;
+
+        transform:
+                translateY(-50%)
+                scale(1);
+    }
+
+    100% {
+        opacity: 0;
+
+        transform:
+                translateY(-50%)
+                scale(0.95);
+
+        visibility: hidden;
+    }
 }
 
 /* --------------------------------------------------
@@ -486,10 +648,18 @@ body {
             ease;
 }
 
+/*
+ * Blue = data changed.
+ * Green remains reserved for Available.
+ */
 .availability-row.availability-updated {
+    position: relative;
+
+    z-index: 1;
+
     animation:
             availabilityUpdated
-            1.8s
+            8s
             ease-out;
 }
 
@@ -522,27 +692,57 @@ body {
 
 @keyframes availabilityUpdated {
     0% {
-        background-color: inherit;
-        box-shadow:
-                inset 0 0 0 transparent;
-    }
-
-    12% {
         background-color: #bbf7d0;
+
         box-shadow:
-                inset 6px 0 0 #16a34a;
+                inset 8px 0 0 #16a34a,
+                0 0 0 3px
+                rgba(34, 197, 94, 0.28);
+
+        transform: scale(1);
     }
 
-    42% {
+    8% {
         background-color: #dcfce7;
+
         box-shadow:
-                inset 6px 0 0 #22c55e;
+                inset 8px 0 0 #16a34a,
+                0 0 16px
+                rgba(34, 197, 94, 0.22);
+
+        transform: scale(1.006);
+    }
+
+    20% {
+        background-color: #ecfdf5;
+
+        box-shadow:
+                inset 8px 0 0 #22c55e;
+
+        transform: scale(1);
+    }
+
+    50% {
+        background-color: #f0fdf4;
+
+        box-shadow:
+                inset 6px 0 0 #4ade80;
+    }
+
+    75% {
+        background-color: #f7fef9;
+
+        box-shadow:
+                inset 4px 0 0 #86efac;
     }
 
     100% {
         background-color: inherit;
+
         box-shadow:
                 inset 0 0 0 transparent;
+
+        transform: scale(1);
     }
 }
 
@@ -561,10 +761,10 @@ body {
         grid-template-columns:
             minmax(190px, 0.9fr)
             minmax(280px, 1.2fr)
-            auto;
+            330px;
 
         padding:
-                5px
+                3px
                 14px;
     }
 
@@ -577,7 +777,8 @@ body {
     }
 
     .row-badges {
-        min-width: 245px;
+        width: 330px;
+        min-width: 330px;
     }
 
     .badge {
@@ -587,7 +788,13 @@ body {
                 5px
                 9px;
 
-        min-height: 32px;
+        min-height: 30px;
+    }
+
+    .update-detail-badge {
+        min-width: 86px;
+
+        font-size: 11px;
     }
 }
 
@@ -600,7 +807,7 @@ body {
         grid-template-columns:
             minmax(155px, 0.9fr)
             minmax(220px, 1.15fr)
-            auto;
+            270px;
     }
 
     .row-title {
@@ -612,11 +819,13 @@ body {
     }
 
     .row-next-label {
-        font-size: 10px;
+        font-size: 9px;
     }
 
     .row-badges {
-        min-width: 210px;
+        width: 270px;
+        min-width: 270px;
+
         gap: 4px;
     }
 
@@ -626,6 +835,125 @@ body {
         padding:
                 5px
                 7px;
+    }
+
+    .update-detail-badge {
+        min-width: 80px;
+
+        padding:
+                5px
+                8px;
+
+        font-size: 10px;
+    }
+}
+
+/* --------------------------------------------------
+   SHORT DISPLAY HEIGHT
+-------------------------------------------------- */
+
+@media (max-height: 760px) {
+    .app-shell {
+        padding-top: 6px;
+        padding-bottom: 6px;
+    }
+
+    .list-card-header {
+        min-height: 46px;
+
+        padding-top: 4px;
+        padding-bottom: 4px;
+    }
+
+    .list-card-header h2 {
+        font-size: 21px;
+    }
+
+    .status-pill {
+        min-height: 40px;
+
+        padding:
+                6px
+                16px;
+
+        font-size: 17px;
+    }
+
+    #refreshBtn {
+        min-height: 36px;
+
+        padding:
+                6px
+                14px;
+    }
+
+    .availability-row {
+        padding-top: 2px;
+        padding-bottom: 2px;
+    }
+
+    .row-title {
+        line-height: 1;
+    }
+
+    .row-next {
+        gap: 0;
+    }
+
+    .row-next-label {
+        font-size: 11px;
+        line-height: 1;
+        margin-bottom: 1px;
+    }
+
+    .row-next-value {
+        line-height: 1;
+    }
+
+    .badge {
+        min-height: 28px;
+
+        padding-top: 4px;
+        padding-bottom: 4px;
+    }
+
+    .update-detail-badge {
+        min-height: 28px;
+    }
+}
+
+@media (max-height: 650px) {
+    .list-card-header {
+        min-height: 42px;
+    }
+
+    .status-pill {
+        min-height: 36px;
+
+        font-size: 16px;
+    }
+
+    .availability-row {
+        padding-top: 1px;
+        padding-bottom: 1px;
+    }
+
+    .row-title {
+        font-size: 16px;
+    }
+
+    .row-next-value {
+        font-size: 15px;
+    }
+
+    .badge {
+        min-height: 26px;
+
+        font-size: 11px;
+    }
+
+    .update-detail-badge {
+        min-height: 26px;
     }
 }
 
@@ -639,7 +967,8 @@ prefers-reduced-motion:
 ) {
     .dashboard-updating .status-pill,
     .dashboard-updated .status-pill,
-    .availability-row.availability-updated {
+    .availability-row.availability-updated,
+    .update-detail-badge {
         animation: none;
     }
 }
