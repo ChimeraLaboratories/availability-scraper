@@ -9,33 +9,13 @@ COPY . .
 
 RUN npm run build
 
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    xvfb \
-    x11-utils \
-    fluxbox \
-    x11vnc \
-    novnc \
-    websockify \
-    wget \
-    gnupg \
-    ca-certificates \
-    tzdata \
- && rm -rf /var/lib/apt/lists/*
-
-RUN npx playwright install chromium
-
-ENV DISPLAY=:99
 ENV PORT=3004
-ENV BROWSER_PROFILE_DIR=/app/data/browser-profile
 
-RUN mkdir -p /app/data/browser-profile
-RUN mkdir -p /tmp/.X11-unix
+RUN mkdir -p /app/data
 
 COPY docker/start.sh /start.sh
 RUN chmod +x /start.sh
 
 EXPOSE 3004
-EXPOSE 6080
-EXPOSE 5900
 
 CMD ["/start.sh"]
