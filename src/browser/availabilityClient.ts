@@ -45,17 +45,6 @@ export async function fetchAvailabilityFromPage(
             request,
         );
 
-    if(request.lineOfBusiness === "AUDIOLOGY") {
-        console.log("AUDIOLOGY REQUEST:",
-            {
-                storeNumber: request.storeNumber,
-                slotType: request.slotType,
-                startDate: request.startDate,
-            });
-
-        console.log("AUDIOLOGY RESPONSE:",result.text);
-    }
-
     if (!result.ok) {
         throw new Error(
             `Availability request failed with status ${result.status}: ${result.text}`,
