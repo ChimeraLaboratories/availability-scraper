@@ -124,6 +124,11 @@ async function getRemoteWebSocketUrl(
     const response =
         await fetch(
             versionUrl,
+            {
+                headers: {
+                    Host: "localhost",
+                },
+            },
         );
 
     if (!response.ok) {
@@ -184,6 +189,11 @@ async function connectToRemoteBrowser():
     const browser =
         await chromium.connectOverCDP(
             websocketUrl,
+            {
+                headers: {
+                    Host: "localhost",
+                },
+            },
         );
 
     remoteBrowser = browser;
