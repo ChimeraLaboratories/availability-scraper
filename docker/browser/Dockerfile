@@ -7,6 +7,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     x11vnc \
     novnc \
     websockify \
+    socat \
     ca-certificates \
     tzdata \
  && rm -rf /var/lib/apt/lists/*
@@ -16,6 +17,7 @@ RUN npx playwright install chromium
 ENV DISPLAY=:99
 ENV BROWSER_PROFILE_DIR=/browser-profile
 ENV CDP_PORT=9222
+ENV CHROME_CDP_PORT=9223
 ENV VNC_PORT=5900
 ENV NOVNC_PORT=6080
 
