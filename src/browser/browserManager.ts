@@ -124,11 +124,6 @@ async function getRemoteWebSocketUrl(
     const response =
         await fetch(
             versionUrl,
-            {
-                headers: {
-                    Host: "localhost",
-                },
-            },
         );
 
     if (!response.ok) {
@@ -189,11 +184,6 @@ async function connectToRemoteBrowser():
     const browser =
         await chromium.connectOverCDP(
             websocketUrl,
-            {
-                headers: {
-                    Host: "localhost",
-                },
-            },
         );
 
     remoteBrowser = browser;
@@ -348,8 +338,6 @@ export async function closeBrowser():
     clearBrowser();
 
     if (BROWSER_CDP_URL) {
-        // The browser is owned by the dedicated browser container.
-        // Disconnecting the scraper must not terminate Chromium or its profile.
         remoteBrowser = null;
         return;
     }
