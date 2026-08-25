@@ -110,6 +110,60 @@ async function initialiseContext(
     return page;
 }
 
+async function getRemoteWebSocketUrl(
+    cdpUrl: string,
+): Promise<string> {
+    const versionUrl =
+        new URL(
+            "/json/version",
+            cdpUrl.endsWith("/")
+                ? cdpUrl
+                : `${cdpUrl}/`,
+        );
+
+    const response =
+        await fetch(
+            versionUrl,
+        );
+
+    if (!response.ok) {
+        throw new Error(
+            `Remote Chromium CDP endpoint returned ${response.status}.`,
+        );
+    }
+
+    const data =
+        await response.json() as {
+            webSocketDebuggerUrl?: string;
+        };
+
+    if (!data.webSocketDebuggerUrl) {
+        throw new Error(
+            "Remote Chromium did not return a webSocketDebuggerUrl.",
+        );
+    }
+
+    const websocketUrl =
+        new URL(
+            data.webSocketDebuggerUrl,
+        );
+
+    const publicCdpUrl =
+        new URL(
+            cdpUrl,
+        );
+
+    websocketUrl.protocol =
+        publicCdpUrl.protocol === "https:"
+            ? "wss:"
+            : "ws:";
+
+    websocketUrl.host =
+        publicCdpUrl.host;
+
+    return websocketUrl.toString();
+}
+
 async function connectToRemoteBrowser():
     Promise<Page> {
     if (!BROWSER_CDP_URL) {
@@ -122,9 +176,14 @@ async function connectToRemoteBrowser():
         `Connecting to browser over CDP: ${BROWSER_CDP_URL}`,
     );
 
+    const websocketUrl =
+        await getRemoteWebSocketUrl(
+            BROWSER_CDP_URL,
+        );
+
     const browser =
         await chromium.connectOverCDP(
-            BROWSER_CDP_URL,
+            websocketUrl,
         );
 
     remoteBrowser = browser;
