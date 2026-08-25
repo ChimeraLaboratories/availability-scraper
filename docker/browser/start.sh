@@ -4,6 +4,7 @@ set -e
 export DISPLAY=${DISPLAY:-:99}
 export BROWSER_PROFILE_DIR=${BROWSER_PROFILE_DIR:-/browser-profile}
 export CDP_PORT=${CDP_PORT:-9222}
+export CHROME_CDP_PORT=${CHROME_CDP_PORT:-9223}
 export VNC_PORT=${VNC_PORT:-5900}
 export NOVNC_PORT=${NOVNC_PORT:-6080}
 
@@ -40,11 +41,13 @@ if [ -z "$CHROMIUM_BIN" ]; then
 fi
 
 echo "Using Chromium executable: ${CHROMIUM_BIN}"
-echo "Starting Chromium with CDP on port ${CDP_PORT}..."
+echo "Starting CDP proxy on 0.0.0.0:${CDP_PORT} -> 127.0.0.1:${CHROME_CDP_PORT}..."
+socat TCP-LISTEN:"$CDP_PORT",fork,reuseaddr,bind=0.0.0.0 TCP:127.0.0.1:"$CHROME_CDP_PORT" &
+
+echo "Starting Chromium with private CDP on port ${CHROME_CDP_PORT}..."
 exec "$CHROMIUM_BIN" \
     --user-data-dir="$BROWSER_PROFILE_DIR" \
-    --remote-debugging-address=0.0.0.0 \
-    --remote-debugging-port="$CDP_PORT" \
+    --remote-debugging-port="$CHROME_CDP_PORT" \
     --disable-blink-features=AutomationControlled \
     --no-sandbox \
     --disable-dev-shm-usage \
