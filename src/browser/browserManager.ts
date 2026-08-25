@@ -3,6 +3,7 @@ import {
 } from "playwright";
 
 import type {
+    Browser,
     BrowserContext,
     Page,
 } from "playwright";
@@ -29,8 +30,15 @@ const PROFILE_DIR =
         "browser-profile"
     );
 
+const BROWSER_CDP_URL =
+    process.env.BROWSER_CDP_URL?.trim() ||
+    null;
+
 let browserLaunchPromise:
     Promise<Page> | null = null;
+
+let remoteBrowser:
+    Browser | null = null;
 
 function getUsablePage():
     Page | null {
@@ -68,7 +76,87 @@ function getUsablePage():
     return null;
 }
 
-async function launchBrowser():
+async function initialiseContext(
+    context: BrowserContext,
+): Promise<Page> {
+    await installSpecsaversCookie(
+        context,
+    );
+
+    setBrowserContext(context);
+
+    const page =
+        context
+            .pages()
+            .find(
+                (candidate) =>
+                    !candidate.isClosed(),
+            ) ??
+        await context.newPage();
+
+    setPage(page);
+
+    page.once(
+        "close",
+        () => {
+            if (
+                getPage() === page
+            ) {
+                setPage(null);
+            }
+        },
+    );
+
+    return page;
+}
+
+async function connectToRemoteBrowser():
+    Promise<Page> {
+    if (!BROWSER_CDP_URL) {
+        throw new Error(
+            "BROWSER_CDP_URL is not configured.",
+        );
+    }
+
+    console.log(
+        `Connecting to browser over CDP: ${BROWSER_CDP_URL}`,
+    );
+
+    const browser =
+        await chromium.connectOverCDP(
+            BROWSER_CDP_URL,
+        );
+
+    remoteBrowser = browser;
+
+    browser.once(
+        "disconnected",
+        () => {
+            if (
+                remoteBrowser === browser
+            ) {
+                remoteBrowser = null;
+            }
+
+            clearBrowser();
+        },
+    );
+
+    const context =
+        browser.contexts()[0];
+
+    if (!context) {
+        throw new Error(
+            "Remote Chromium did not expose a default browser context.",
+        );
+    }
+
+    return initialiseContext(
+        context,
+    );
+}
+
+async function launchLocalBrowser():
     Promise<Page> {
     const context =
         await chromium.launchPersistentContext(
@@ -90,23 +178,6 @@ async function launchBrowser():
         );
 
     try {
-        await installSpecsaversCookie(
-            context,
-        );
-
-        setBrowserContext(context);
-
-        const page =
-            context
-                .pages()
-                .find(
-                    (candidate) =>
-                        !candidate.isClosed(),
-                ) ??
-            await context.newPage();
-
-        setPage(page);
-
         context.once(
             "close",
             () => {
@@ -114,18 +185,9 @@ async function launchBrowser():
             },
         );
 
-        page.once(
-            "close",
-            () => {
-                if (
-                    getPage() === page
-                ) {
-                    setPage(null);
-                }
-            },
+        return await initialiseContext(
+            context,
         );
-
-        return page;
     } catch (error: unknown) {
         await context
             .close()
@@ -135,6 +197,19 @@ async function launchBrowser():
 
         throw error;
     }
+}
+
+async function launchBrowser():
+    Promise<Page> {
+    if (BROWSER_CDP_URL) {
+        return connectToRemoteBrowser();
+    }
+
+    console.log(
+        "BROWSER_CDP_URL not set; launching local Chromium.",
+    );
+
+    return launchLocalBrowser();
 }
 
 export async function ensureBrowser():
@@ -202,6 +277,13 @@ export async function closeBrowser():
         getBrowserContext();
 
     clearBrowser();
+
+    if (BROWSER_CDP_URL) {
+        // The browser is owned by the dedicated browser container.
+        // Disconnecting the scraper must not terminate Chromium or its profile.
+        remoteBrowser = null;
+        return;
+    }
 
     if (context) {
         await context
