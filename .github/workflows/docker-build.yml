@@ -1,4 +1,4 @@
-name: Build and publish Docker image
+name: Build and publish Docker images
 
 on:
   push:
@@ -32,9 +32,17 @@ jobs:
             echo "tag=dev" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build and push
+      - name: Build and push scraper
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           tags: ghcr.io/chimeralaboratories/availability-scraper:${{ steps.tag.outputs.tag }}
+
+      - name: Build and push browser
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/browser/Dockerfile
+          push: true
+          tags: ghcr.io/chimeralaboratories/availability-browser:${{ steps.tag.outputs.tag }}
