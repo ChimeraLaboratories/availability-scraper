@@ -31,9 +31,15 @@ fluxbox &
 x11vnc -display :99 -forever -shared -rfbport "$VNC_PORT" &
 websockify --web=/usr/share/novnc/ "$NOVNC_PORT" localhost:"$VNC_PORT" &
 
-CHROMIUM="/ms-playwright/chromium-*/chrome-linux/chrome"
-CHROMIUM_BIN=$(echo $CHROMIUM)
+CHROMIUM_BIN=$(find /ms-playwright -type f \( -name chrome -o -name chromium \) -path '*chromium*' -perm -111 2>/dev/null | head -n 1)
 
+if [ -z "$CHROMIUM_BIN" ]; then
+    echo "Could not locate Chromium executable under /ms-playwright."
+    find /ms-playwright -maxdepth 4 -type f -perm -111 2>/dev/null | sort
+    exit 1
+fi
+
+echo "Using Chromium executable: ${CHROMIUM_BIN}"
 echo "Starting Chromium with CDP on port ${CDP_PORT}..."
 exec "$CHROMIUM_BIN" \
     --user-data-dir="$BROWSER_PROFILE_DIR" \
