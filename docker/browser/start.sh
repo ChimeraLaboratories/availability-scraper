@@ -41,8 +41,8 @@ if [ -z "$CHROMIUM_BIN" ]; then
 fi
 
 echo "Using Chromium executable: ${CHROMIUM_BIN}"
-echo "Starting CDP proxy on 0.0.0.0:${CDP_PORT} -> 127.0.0.1:${CHROME_CDP_PORT}..."
-socat TCP-LISTEN:"$CDP_PORT",fork,reuseaddr,bind=0.0.0.0 TCP:127.0.0.1:"$CHROME_CDP_PORT" &
+echo "Starting CDP reverse proxy on 0.0.0.0:${CDP_PORT} -> 127.0.0.1:${CHROME_CDP_PORT}..."
+nginx
 
 echo "Starting Chromium with private CDP on port ${CHROME_CDP_PORT}..."
 exec "$CHROMIUM_BIN" \
