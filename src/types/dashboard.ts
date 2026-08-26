@@ -5,7 +5,9 @@ import type {
 
 export interface AvailabilityFilters {
     weekendsOnly?: boolean;
+    weekdaysOnly?: boolean;
     afterTime?: string;
+    beforeTime?: string;
 }
 
 export interface DashboardCategory {

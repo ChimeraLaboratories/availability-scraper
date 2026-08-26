@@ -27,6 +27,16 @@ export const dashboardCategories: DashboardCategory[] = [
         },
     },
     {
+        key: "child-eye-test-during-school",
+        label: "Child Eye Test - During School",
+        lineOfBusiness: "OPTICAL",
+        slotType: "CHILD_EYE_TEST",
+        filters: {
+            weekdaysOnly: true,
+            beforeTime: "16:00:00",
+        },
+    },
+    {
         key: "child-eye-test-after-4pm",
         label: "Child Eye Test - After 4pm",
         lineOfBusiness: "OPTICAL",
