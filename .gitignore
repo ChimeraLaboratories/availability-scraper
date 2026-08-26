@@ -10,4 +10,7 @@ yarn-error.log*
 
 .vscode/*
 
+# Environment configuration / secrets
 .env
+.env.*
+!.env.example
