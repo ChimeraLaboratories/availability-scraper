@@ -22,12 +22,10 @@ function extractCookieValue(
         );
     }
 
-    // Remove anything after a Set-Cookie-style semicolon.
     value =
         value.split(";")[0]
             ?.trim() ?? "";
 
-    // Remove surrounding quotes if copied from DevTools/.env.
     if (
         (value.startsWith('"') &&
             value.endsWith('"')) ||
@@ -52,9 +50,20 @@ function extractCookieValue(
 export async function installSpecsaversCookie(
     context: BrowserContext,
 ): Promise<void> {
+    const configuredValue =
+        appConfig.specsaversCookie;
+
+    if (!configuredValue) {
+        console.log(
+            "SPECSAVERS_COOKIE not configured; using existing browser session.",
+        );
+
+        return;
+    }
+
     const value =
         extractCookieValue(
-            appConfig.specsaversCookie,
+            configuredValue,
         );
 
     console.log(
@@ -65,8 +74,6 @@ export async function installSpecsaversCookie(
         {
             name: "cf_clearance",
             value,
-
-            // Let Chromium derive domain/path from the URL.
             url: "https://www.specsavers.co.uk/",
         },
     ]);
