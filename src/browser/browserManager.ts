@@ -19,6 +19,7 @@ import {
 import {
     installSpecsaversCookie,
 } from "./specsaversCookie.js";
+
 import * as os from "node:os";
 import path from "node:path";
 
@@ -27,7 +28,7 @@ const PROFILE_DIR =
     path.join(
         os.homedir(),
         ".availability-scraper",
-        "browser-profile"
+        "browser-profile",
     );
 
 const BROWSER_CDP_URL =
@@ -68,7 +69,9 @@ function getUsablePage():
             );
 
     if (existingPage) {
-        setPage(existingPage);
+        setPage(
+            existingPage,
+        );
 
         return existingPage;
     }
@@ -78,12 +81,17 @@ function getUsablePage():
 
 async function initialiseContext(
     context: BrowserContext,
+    installCookie: boolean,
 ): Promise<Page> {
-    await installSpecsaversCookie(
+    if (installCookie) {
+        await installSpecsaversCookie(
+            context,
+        );
+    }
+
+    setBrowserContext(
         context,
     );
-
-    setBrowserContext(context);
 
     const page =
         context
@@ -94,7 +102,9 @@ async function initialiseContext(
             ) ??
         await context.newPage();
 
-    setPage(page);
+    setPage(
+        page,
+    );
 
     page.once(
         "close",
@@ -102,7 +112,9 @@ async function initialiseContext(
             if (
                 getPage() === page
             ) {
-                setPage(null);
+                setPage(
+                    null,
+                );
             }
         },
     );
@@ -186,7 +198,8 @@ async function connectToRemoteBrowser():
             websocketUrl,
         );
 
-    remoteBrowser = browser;
+    remoteBrowser =
+        browser;
 
     browser.once(
         "disconnected",
@@ -194,7 +207,8 @@ async function connectToRemoteBrowser():
             if (
                 remoteBrowser === browser
             ) {
-                remoteBrowser = null;
+                remoteBrowser =
+                    null;
             }
 
             clearBrowser();
@@ -212,6 +226,7 @@ async function connectToRemoteBrowser():
 
     return initialiseContext(
         context,
+        false,
     );
 }
 
@@ -246,11 +261,15 @@ async function launchLocalBrowser():
 
         return await initialiseContext(
             context,
+            true,
         );
     } catch (error: unknown) {
         await context
             .close()
-            .catch(() => undefined);
+            .catch(
+                () =>
+                    undefined,
+            );
 
         clearBrowser();
 
@@ -288,7 +307,9 @@ export async function ensureBrowser():
             const page =
                 await existingContext.newPage();
 
-            setPage(page);
+            setPage(
+                page,
+            );
 
             return page;
         } catch {
@@ -299,10 +320,12 @@ export async function ensureBrowser():
     if (!browserLaunchPromise) {
         browserLaunchPromise =
             launchBrowser()
-                .finally(() => {
-                    browserLaunchPromise =
-                        null;
-                });
+                .finally(
+                    () => {
+                        browserLaunchPromise =
+                            null;
+                    },
+                );
     }
 
     return browserLaunchPromise;
@@ -328,7 +351,8 @@ export async function closeBrowser():
 
     if (pendingLaunch) {
         await pendingLaunch.catch(
-            () => undefined,
+            () =>
+                undefined,
         );
     }
 
@@ -338,13 +362,18 @@ export async function closeBrowser():
     clearBrowser();
 
     if (BROWSER_CDP_URL) {
-        remoteBrowser = null;
+        remoteBrowser =
+            null;
+
         return;
     }
 
     if (context) {
         await context
             .close()
-            .catch(() => undefined);
+            .catch(
+                () =>
+                    undefined,
+            );
     }
 }
