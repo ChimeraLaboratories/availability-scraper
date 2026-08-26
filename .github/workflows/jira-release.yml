@@ -8,6 +8,11 @@ on:
         required: true
         type: string
 
+      description:
+        description: "Release notes from Jira"
+        required: false
+        type: string
+
 permissions:
   contents: write
   actions: write
@@ -31,6 +36,26 @@ jobs:
         with:
           ref: main
 
+      - name: Create release notes file
+        env:
+          VERSION: ${{ inputs.version }}
+          JIRA_DESCRIPTION: ${{ inputs.description }}
+        run: |
+          {
+            echo "# $VERSION"
+            echo
+
+            if [ -n "$JIRA_DESCRIPTION" ]; then
+              echo "## Release notes"
+              echo
+              echo "$JIRA_DESCRIPTION"
+              echo
+            fi
+
+            echo "## Changes"
+            echo
+          } > release-notes.md
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -42,6 +67,7 @@ jobs:
             gh release create "$VERSION" \
               --target main \
               --title "$VERSION" \
+              --notes-file release-notes.md \
               --generate-notes
           fi
 

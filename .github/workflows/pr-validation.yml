@@ -1,0 +1,33 @@
+name: Validate pull request
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout pull request
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build scraper
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+
+      - name: Build browser
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/browser/Dockerfile
+          push: false
