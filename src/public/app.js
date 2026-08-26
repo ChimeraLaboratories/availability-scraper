@@ -505,39 +505,6 @@ function renderCategories(
 
                 const badges = [];
 
-                /*
-                 * Scraped categories get
-                 * days + slot count.
-                 */
-                if (!isManual) {
-                    badges.push(
-                        buildBadge(
-                            `${
-                                category
-                                    .totalDays ??
-                                0
-                            } days`,
-                            "neutral",
-                        ),
-                    );
-
-                    badges.push(
-                        buildBadge(
-                            `${
-                                category
-                                    .totalSlots ??
-                                0
-                            } slots`,
-                            hasAvailability
-                                ? "success"
-                                : "warning",
-                        ),
-                    );
-                }
-
-                /*
-                 * Availability status badge.
-                 */
                 if (hasError) {
                     badges.push(
                         buildBadge(
