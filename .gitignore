@@ -17,7 +17,6 @@ yarn-error.log*
 
 node_modules/
 dist/
-.env
 .idea/
 data/
 browser-profile/
