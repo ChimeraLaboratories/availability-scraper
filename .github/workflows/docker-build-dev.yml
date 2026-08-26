@@ -6,10 +6,6 @@ on:
       - dev
   workflow_dispatch:
 
-concurrency:
-  group: docker-development
-  cancel-in-progress: true
-
 permissions:
   contents: read
   packages: write
