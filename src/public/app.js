@@ -457,11 +457,6 @@ function renderCategories(
     listEl.innerHTML =
         categories
             .map((category) => {
-                const isManual =
-                    category
-                        .lineOfBusiness ===
-                    "MANUAL";
-
                 const hasError =
                     Boolean(
                         category.error,
@@ -665,7 +660,7 @@ async function loadDashboard() {
         );
 
         if (!response.ok) {
-            throw new Error(
+            new Error(
                 data.error ||
                 "Failed to load dashboard",
             );
