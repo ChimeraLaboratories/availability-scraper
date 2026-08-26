@@ -20,21 +20,24 @@ export function filterAvailability(
                     ? [...day.appointmentSlots]
                     : [];
 
-            if (
-                filters.weekendsOnly &&
-                !isWeekend(day.date)
-            ) {
+            if (filters.weekendsOnly && !isWeekend(day.date)) {
+                appointmentSlots = [];
+            }
+
+            if (filters.weekdaysOnly && isWeekend(day.date)) {
                 appointmentSlots = [];
             }
 
             if (filters.afterTime) {
                 const afterTime = filters.afterTime;
 
-                appointmentSlots =
-                    appointmentSlots.filter(
-                        (slot) =>
-                            slot.startTime >= afterTime,
-                    );
+                appointmentSlots = appointmentSlots.filter((slot) => slot.startTime >= afterTime,);
+            }
+
+            if (filters.beforeTime) {
+                const beforeTime = filters.beforeTime;
+
+                appointmentSlots = appointmentSlots.filter((slot) => slot.startTime < beforeTime,);
             }
 
             return {
