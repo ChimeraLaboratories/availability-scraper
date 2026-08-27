@@ -14,3 +14,9 @@ yarn-error.log*
 .env
 .env.*
 !.env.example
+
+node_modules/
+dist/
+.idea/
+data/
+browser-profile/
