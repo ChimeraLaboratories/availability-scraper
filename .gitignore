@@ -19,4 +19,5 @@ node_modules/
 dist/
 .idea/
 data/
-browser-profile/
+browser-profile/data/browser-profile/
+data/browser-profile/
