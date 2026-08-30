@@ -7,6 +7,7 @@ export CDP_PORT=${CDP_PORT:-9222}
 export CHROME_CDP_PORT=${CHROME_CDP_PORT:-9223}
 export VNC_PORT=${VNC_PORT:-5900}
 export NOVNC_PORT=${NOVNC_PORT:-6080}
+export VNC_PASSWORD_FILE=${VNC_PASSWORD_FILE:-/vnc-auth/passwd}
 
 mkdir -p /tmp/.X11-unix "$BROWSER_PROFILE_DIR"
 rm -f /tmp/.X99-lock
@@ -28,8 +29,13 @@ for i in $(seq 1 30); do
     sleep 0.5
 done
 
+if [ ! -f "$VNC_PASSWORD_FILE" ]; then
+  echo "VNC password file not found: $VNC_PASSWORD_FILE"
+  exit 1
+fi
+
 fluxbox &
-x11vnc -display :99 -forever -shared -rfbport "$VNC_PORT" &
+x11vnc -display :99 -forever -shared -localhost -rfbport "$VNC_PORT" -rfbauth "$VNC_PASSWORD_FILE" &
 websockify --web=/usr/share/novnc/ "$NOVNC_PORT" localhost:"$VNC_PORT" &
 
 CHROMIUM_BIN=$(find /ms-playwright -type f \( -name chrome -o -name chromium \) -path '*chromium*' -perm -111 2>/dev/null | head -n 1)
