@@ -92,8 +92,11 @@ body {
     display: flex;
     align-items: center;
 
+    min-width: 0;
+    flex: 0 1 auto;
+
     gap:
-            clamp(14px, 1.5vw, 24px);
+            clamp(10px, 1vw, 16px);
 }
 
 .brand-mark {
@@ -167,16 +170,23 @@ body {
     align-items: center;
     justify-content: space-between;
 
+    gap:
+            clamp(10px, 1vw, 16px);
+
     flex: 0 0 auto;
 
     min-height: 50px;
 
     padding:
             6px
-            16px;
+            14px;
 
     border-bottom:
             1px solid #e5eaf1;
+}
+
+.list-card-header > div:first-child {
+    min-width: 0;
 }
 
 .list-card-header h2 {
@@ -207,15 +217,17 @@ body {
     align-items: center;
     justify-content: center;
 
+    min-width: 0;
+
     min-height:
             clamp(40px, 5.5vh, 48px);
 
     margin-left:
-            clamp(8px, 1vw, 14px);
+            clamp(6px, 0.7vw, 10px);
 
     padding:
             clamp(6px, 0.7vh, 9px)
-            clamp(15px, 1.3vw, 22px);
+            clamp(12px, 1vw, 18px);
 
     border-radius: 999px;
 
@@ -262,12 +274,14 @@ body {
 }
 
 #refreshBtn {
+    flex: 0 0 auto;
+
     min-height:
             clamp(40px, 5.5vh, 48px);
 
     padding:
             clamp(6px, 0.7vh, 9px)
-            clamp(16px, 1.3vw, 22px);
+            clamp(14px, 1.1vw, 18px);
 
     border: 0;
     border-radius: 11px;
@@ -367,7 +381,7 @@ body {
 
     font-weight: 750;
 
-    line-height: 1.15;
+    line-height: 1.2;
 
     white-space: nowrap;
 
@@ -438,7 +452,7 @@ body {
 
     font-weight: 750;
 
-    line-height: 1.15;
+    line-height: 1.2;
 
     white-space: nowrap;
 
@@ -825,15 +839,15 @@ body {
 
 @media (max-height: 760px) {
     .app-shell {
-        padding-top: 5px;
-        padding-bottom: 5px;
+        padding-top: 3px;
+        padding-bottom: 3px;
     }
 
     .list-card-header {
-        min-height: 48px;
+        min-height: 46px;
 
-        padding-top: 4px;
-        padding-bottom: 4px;
+        padding-top: 3px;
+        padding-bottom: 3px;
     }
 
     .availability-row {
@@ -841,12 +855,9 @@ body {
         padding-bottom: 3px;
     }
 
-    .row-title {
-        line-height: 1.15;
-    }
-
+    .row-title,
     .row-next-value {
-        line-height: 1.15;
+        line-height: 1.2;
     }
 }
 
