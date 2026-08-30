@@ -301,10 +301,6 @@ body {
 
     display: grid;
 
-    /*
-     * Each appointment row receives an equal share
-     * of the remaining vertical space.
-     */
     grid-auto-rows: minmax(0, 1fr);
 
     overflow: hidden;
@@ -320,16 +316,10 @@ body {
 
     display: grid;
 
-    /*
-     * Appointment | Next Available | Status
-     *
-     * More room is deliberately given to the
-     * Next Available column so dates do not clip.
-     */
     grid-template-columns:
-        minmax(0, 40fr)
-        minmax(0, 48fr)
-        minmax(96px, 12fr);
+        minmax(0, 41fr)
+        minmax(0, 49fr)
+        minmax(88px, 10fr);
 
     align-items: center;
 
@@ -367,13 +357,13 @@ body {
     font-size:
             clamp(
                     17px,
-                    min(1.65vw, 2.8vh),
+                    min(1.65vw, 2.7vh),
                     21px
             );
 
     font-weight: 750;
 
-    line-height: 1.18;
+    line-height: 1.15;
 
     white-space: nowrap;
 
@@ -416,38 +406,18 @@ body {
 
 .row-next {
     display: flex;
-    flex-direction: column;
-    justify-content: center;
+    align-items: center;
+    justify-content: flex-start;
 
     min-width: 0;
     min-height: 0;
-
-    gap: 1px;
 
     padding-right:
             clamp(8px, 0.8vw, 14px);
 }
 
 .row-next-label {
-    color: #64748b;
-
-    font-size:
-            clamp(
-                    11px,
-                    min(0.9vw, 1.8vh),
-                    13px
-            );
-
-    font-weight: 750;
-
-    line-height: 1.1;
-
-    text-transform: uppercase;
-    letter-spacing: 0.055em;
-
-    margin-bottom: 2px;
-
-    white-space: nowrap;
+    display: none;
 }
 
 .row-next-value {
@@ -458,7 +428,7 @@ body {
     font-size:
             clamp(
                     17px,
-                    min(1.7vw, 2.8vh),
+                    min(1.7vw, 2.7vh),
                     21px
             );
 
@@ -468,11 +438,8 @@ body {
 
     white-space: nowrap;
 
-    /*
-     * Do not ellipsis appointment dates.
-     */
-    overflow: visible;
-    text-overflow: clip;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* --------------------------------------------------
@@ -562,10 +529,6 @@ body {
    UPDATED OVERLAY
 -------------------------------------------------- */
 
-/*
- * This sits directly over the normal Available pill.
- * It does NOT take up any extra space in the row.
- */
 .update-detail-badge {
     position: absolute;
 
@@ -714,10 +677,6 @@ body {
             ease;
 }
 
-/*
- * Blue = data changed.
- * Green remains reserved for Available.
- */
 .availability-row.availability-updated {
     position: relative;
 
@@ -823,9 +782,9 @@ body {
 
     .availability-row {
         grid-template-columns:
-            minmax(0px, 40fr)
-            minmax(0px, 47fr)
-            minmax(82px, 13fr);
+            minmax(0, 40fr)
+            minmax(0, 50fr)
+            minmax(82px, 10fr);
 
         padding-left: 12px;
         padding-right: 12px;
@@ -839,9 +798,9 @@ body {
 @media (max-width: 800px) {
     .availability-row {
         grid-template-columns:
-            minmax(0, 41fr)
-            minmax(0, 45fr)
-            minmax(76px, 14fr);
+            minmax(0, 39fr)
+            minmax(0, 50fr)
+            minmax(76px, 11fr);
 
         padding-left: 9px;
         padding-right: 9px;
@@ -879,7 +838,7 @@ body {
     }
 
     .row-title {
-        line-height: 1.18;
+        line-height: 1.15;
     }
 
     .row-next-value {
