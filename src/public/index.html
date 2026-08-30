@@ -5,6 +5,78 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Availability Dashboard</title>
     <link rel="stylesheet" href="/styles.css" />
+    <style>
+        .availability-column-headings {
+            flex: 0 0 auto;
+
+            display: grid;
+            grid-template-columns:
+                minmax(0, 45fr)
+                minmax(0, 43fr)
+                minmax(88px, 12fr);
+
+            align-items: center;
+
+            min-height: 28px;
+
+            padding:
+                3px
+                clamp(12px, 1.1vw, 18px);
+
+            border-bottom: 1px solid #e5eaf1;
+
+            background: #f8fafc;
+            color: #64748b;
+
+            font-size: clamp(10px, min(0.85vw, 1.55vh), 12px);
+            font-weight: 800;
+            line-height: 1;
+
+            text-transform: uppercase;
+            letter-spacing: 0.055em;
+        }
+
+        .availability-column-headings span {
+            min-width: 0;
+            white-space: nowrap;
+        }
+
+        .availability-column-headings span:last-child {
+            text-align: right;
+        }
+
+        @media (max-width: 1100px) {
+            .availability-column-headings {
+                grid-template-columns:
+                    minmax(0, 44fr)
+                    minmax(0, 44fr)
+                    minmax(82px, 12fr);
+
+                padding-left: 12px;
+                padding-right: 12px;
+            }
+        }
+
+        @media (max-width: 800px) {
+            .availability-column-headings {
+                grid-template-columns:
+                    minmax(0, 42fr)
+                    minmax(0, 45fr)
+                    minmax(76px, 13fr);
+
+                padding-left: 9px;
+                padding-right: 9px;
+            }
+        }
+
+        @media (max-height: 760px) {
+            .availability-column-headings {
+                min-height: 24px;
+                padding-top: 2px;
+                padding-bottom: 2px;
+            }
+        }
+    </style>
 </head>
 <body>
 <div class="app-shell">
@@ -19,6 +91,12 @@
                     <div id="status" class="status-pill status-idle">Idle</div>
                     <button id="refreshBtn" class="btn btn-primary">Refresh</button>
                 </div>
+            </div>
+
+            <div class="availability-column-headings" aria-hidden="true">
+                <span>Appointment</span>
+                <span>Next appointment</span>
+                <span>Status</span>
             </div>
 
             <div id="list" class="availability-list"></div>
