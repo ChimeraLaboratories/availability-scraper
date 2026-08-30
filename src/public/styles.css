@@ -765,7 +765,7 @@ body {
         grid-template-columns:
             minmax(190px, 0.9fr)
             minmax(280px, 1.2fr)
-            330px;
+            110px;
 
         padding:
                 3px
@@ -784,11 +784,6 @@ body {
         width: 110px;
         min-width: 110px;
     }
-
-    grid-template-columns:
-    minmax(190px, 0.9fr)
-    minmax(280px, 1.2fr)
-    110px;
 
     .badge {
         font-size: 12px;
@@ -816,7 +811,7 @@ body {
         grid-template-columns:
             minmax(155px, 0.9fr)
             minmax(220px, 1.15fr)
-            270px;
+            100px;
     }
 
     .row-title {
@@ -837,11 +832,6 @@ body {
 
         gap: 4px;
     }
-
-    grid-template-columns:
-    minmax(155px, 0.9fr)
-    minmax(220px, 1.15fr)
-    100px;
 
     .badge {
         font-size: 11px;
