@@ -45,6 +45,15 @@ export async function fetchAvailabilityFromPage(
             request,
         );
 
+    console.log("[Availability] Response",
+        {
+            slotType: request.slotType,
+            lineOfBusiness: request.lineOfBusiness ?? "OPTICAL",
+            status: result.status,
+            ok: result.ok,
+        },
+    );
+
     if (!result.ok) {
         throw new Error(
             `Availability request failed with status ${result.status}: ${result.text}`,
@@ -81,17 +90,42 @@ export async function fetchAvailabilityFromPage(
         );
     }
 
-    if (parsed.errors && parsed.errors.length > 0) {
+    const storeAppointmentSlots = parsed.data?.storeAppointmentSlots;
 
+    if (!storeAppointmentSlots) {
+        throw new Error("Availability response did not contain storeAppointmentSlots");
     }
 
-    return (
-        parsed.data
-            ?.storeAppointmentSlots
-            ?.[0]
-            ?.availableSlots ??
-        []
+    if (storeAppointmentSlots.length === 0) {
+        throw new Error("Availability response contained an empty storeAppointmentSlots array");
+    }
+
+    const storeAvailability = storeAppointmentSlots[0];
+
+    if (!storeAvailability) {
+        throw new Error("Availability response did not contain availability for the requested store");
+    }
+
+    if (!Array.isArray(storeAvailability.availableSlots)) {
+        throw new Error("Availability response did not contain an availableSlots array");
+    }
+
+    const availableSlots = storeAvailability.availableSlots;
+
+    const totalSlots = availableSlots.reduce((total, day) => total + day.appointmentSlots.length, 0);
+
+    console.log("[Availability] Parsed",
+        {
+            slotType: request.slotType,
+            lineOfBusiness: request.lineOfBusiness ?? "OPTICAL",
+            availabilityDays: availableSlots.length,
+            totalSlots,
+            firstAvailableDate: availableSlots[0]?.date ?? null,
+            firstAvailableTime: availableSlots[0]?.appointmentSlots?.[0]?.startTime ?? null,
+        },
     );
+
+    return availableSlots;
 }
 
 function addDays(
@@ -137,6 +171,16 @@ async function executeAvailabilityRequest(
         isAudiology
             ? audiologyStoreNumber!
             : request.storeNumber;
+
+    console.log("[Availability] Request",
+        {
+            storeNumber,
+            slotType: request.slotType,
+            lineOfBusiness: request.lineOfBusiness ?? "OPTICAL",
+            startDate: request.startDate,
+            maxNumberOfDays: request.maxNumberOfDays ?? 42,
+        },
+    );
 
     const maxEndDate =
         isAudiology
