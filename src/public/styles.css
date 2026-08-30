@@ -300,7 +300,7 @@ body {
     display: grid;
 
     grid-template-columns:
-        minmax(300px, 32%)
+        minmax(380px, 40%)
         minmax(420px, 1fr)
         120px;
 
@@ -309,7 +309,7 @@ body {
     min-height: 0;
 
     padding:
-            3px
+            6px
             18px;
 
     border-bottom:
@@ -345,7 +345,7 @@ body {
 
     font-weight: 750;
 
-    line-height: 1.05;
+    line-height: 1.2;
 
     white-space: nowrap;
     overflow: hidden;
