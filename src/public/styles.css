@@ -92,7 +92,8 @@ body {
     display: flex;
     align-items: center;
 
-    gap: 10px;
+    gap:
+            clamp(14px, 1.5vw, 24px);
 }
 
 .brand-mark {
@@ -209,6 +210,9 @@ body {
     min-height:
             clamp(40px, 5.5vh, 48px);
 
+    margin-left:
+            clamp(8px, 1vw, 14px);
+
     padding:
             clamp(6px, 0.7vh, 9px)
             clamp(15px, 1.3vw, 22px);
@@ -317,9 +321,9 @@ body {
     display: grid;
 
     grid-template-columns:
-        minmax(0, 41fr)
-        minmax(0, 49fr)
-        minmax(88px, 10fr);
+        minmax(0, 45fr)
+        minmax(0, 43fr)
+        minmax(88px, 12fr);
 
     align-items: center;
 
@@ -782,9 +786,9 @@ body {
 
     .availability-row {
         grid-template-columns:
-            minmax(0, 40fr)
-            minmax(0, 50fr)
-            minmax(82px, 10fr);
+            minmax(0, 44fr)
+            minmax(0, 44fr)
+            minmax(82px, 12fr);
 
         padding-left: 12px;
         padding-right: 12px;
@@ -798,9 +802,9 @@ body {
 @media (max-width: 800px) {
     .availability-row {
         grid-template-columns:
-            minmax(0, 39fr)
-            minmax(0, 50fr)
-            minmax(76px, 11fr);
+            minmax(0, 42fr)
+            minmax(0, 45fr)
+            minmax(76px, 13fr);
 
         padding-left: 9px;
         padding-right: 9px;
