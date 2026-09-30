@@ -2,126 +2,135 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-
-  <meta
-          name="viewport"
-          content="width=device-width, initial-scale=1"
-  >
-
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Availability Admin</title>
-
-  <link
-          rel="stylesheet"
-          href="/admin/admin.css"
-  >
+  <link rel="stylesheet" href="/admin/admin.css">
 </head>
-
 <body>
   <main class="admin-shell">
     <section class="admin-card">
-
       <header class="admin-header">
-        <p class="eyebrow">
-          ChimeraLabs
-        </p>
-
-        <h1>
-          Availability Admin
-        </h1>
-
-        <p id="subtitle" class="subtitle">
-          Checking authentication...
-        </p>
+        <div>
+          <p class="eyebrow">ChimeraLabs</p>
+          <h1>Availability Admin</h1>
+          <p id="subtitle" class="subtitle">Checking authentication...</p>
+        </div>
+        <button id="logoutButton" class="secondary-button header-action hidden" type="button">Log out</button>
       </header>
 
       <div id="loadingView" class="view">
-        <div class="spinner"></div>
+        <div class="spinner" aria-label="Loading"></div>
       </div>
 
       <div id="loginView" class="view hidden">
-        <form id="loginForm" autocomplete="off">
-          <label for="totpCode">
-            Authenticator code
-          </label>
-
+        <form id="loginForm" class="login-form" autocomplete="off">
+          <label for="totpCode">Authenticator code</label>
           <input id="totpCode" name="code" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="000000" required>
-
           <p id="loginError" class="message error hidden"></p>
-
-          <button id="loginButton" type="submit">
-            Sign in
-          </button>
+          <button id="loginButton" type="submit">Sign in</button>
         </form>
       </div>
 
       <div id="adminView" class="view hidden">
-        <div class="status-row">
-          <div>
-            <span class="status-dot"></span>
-            Authenticated
+        <div id="globalMessage" class="message hidden" role="status"></div>
+
+        <section class="section">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Overview</p>
+              <h2>System status</h2>
+              <p>Live state for the authenticated admin session and persistent scraper browser.</p>
+            </div>
+            <button id="refreshBrowserStatusButton" class="secondary-button compact-button" type="button">Refresh</button>
           </div>
-
-          <button id="logoutButton" class="secondary-button" type="button">
-            Log out
-          </button>
-        </div>
-
-        <div class="admin-content">
-          <h2>
-            System overview
-          </h2>
 
           <div class="status-grid">
-
             <article class="status-card">
-              <p class="status-label">
-                Admin session
-              </p>
-
-              <strong>
-                Authenticated
-              </strong>
-
-              <p class="status-description">
-                Secure TOTP session active.
-              </p>
+              <div class="status-card-heading">
+                <span class="status-label">Admin session</span>
+                <span class="status-badge success">Active</span>
+              </div>
+              <strong>Authenticated</strong>
+              <p class="status-description">TOTP-backed admin session is active.</p>
             </article>
 
             <article class="status-card">
-              <p class="status-label">
-                Browser
-              </p>
-
-              <strong id="browserStatusValue">
-                Loading...
-              </strong>
-
-              <p id="browserStatusMessage" class="status-description">
-                Checking browser status...
-              </p>
+              <div class="status-card-heading">
+                <span class="status-label">Browser</span>
+                <span id="browserStatusBadge" class="status-badge neutral">Checking</span>
+              </div>
+              <strong id="browserStatusValue">Loading...</strong>
+              <p id="browserStatusMessage" class="status-description">Checking browser status...</p>
             </article>
 
             <article class="status-card">
-              <p class="status-label">
-                Readiness
-              </p>
-
-              <strong id="browserReadyValue">
-                Loading...
-              </strong>
-
-              <p id="browserReadyMessage" class="status-description">
-              Waiting for browser status...
-              </p>
+              <div class="status-card-heading">
+                <span class="status-label">Readiness</span>
+                <span id="browserReadyBadge" class="status-badge neutral">Checking</span>
+              </div>
+              <strong id="browserReadyValue">Loading...</strong>
+              <p id="browserReadyMessage" class="status-description">Waiting for browser status...</p>
             </article>
-
           </div>
 
-        </div>
+          <div id="browserDetails" class="browser-details hidden">
+            <div>
+              <span>Page</span>
+              <strong id="browserTitle">—</strong>
+            </div>
+            <div>
+              <span>URL</span>
+              <code id="browserUrl">—</code>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Browser</p>
+              <h2>Browser controls</h2>
+              <p>Operate the persistent browser without opening API endpoints manually.</p>
+            </div>
+          </div>
+
+          <div class="control-grid">
+            <button id="openBrowserButton" type="button">Open browser</button>
+            <button id="continueButton" type="button">Continue session</button>
+            <button id="goToSiteButton" type="button">Go to booking site</button>
+            <button id="saveBrowserStateButton" class="secondary-button" type="button">Save browser state</button>
+          </div>
+
+          <form id="locationSearchForm" class="inline-form">
+            <div class="field">
+              <label for="locationSearchInput">Booking location</label>
+              <input id="locationSearchInput" type="text" placeholder="Store or location" autocomplete="off">
+            </div>
+            <button id="locationSearchButton" type="submit">Search location</button>
+          </form>
+
+          <p id="browserActionMessage" class="message hidden"></p>
+        </section>
+
+        <section class="section">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Manual availability</p>
+              <h2>MECS &amp; Ground Floor</h2>
+              <p>Update the manually maintained next-available date and time shown on the public dashboard.</p>
+            </div>
+            <button id="refreshManualButton" class="secondary-button compact-button" type="button">Refresh</button>
+          </div>
+
+          <div id="manualAvailabilityLoading" class="skeleton-grid">
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+          </div>
+
+          <div id="manualAvailabilityGrid" class="manual-grid hidden"></div>
+        </section>
       </div>
-
     </section>
-
   </main>
 
   <script src="/admin/admin.js" defer></script>
