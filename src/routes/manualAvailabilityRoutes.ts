@@ -10,6 +10,7 @@ import {
 import {
     asyncRoute,
 } from "../utils/asyncRoute.js";
+import {requireAdminSession} from "../middleware/requireAdminSession.js";
 
 export const manualAvailabilityRouter =
     Router();
@@ -29,7 +30,7 @@ manualAvailabilityRouter.get(
 
 manualAvailabilityRouter.put(
     "/manual-availability/:key",
-    asyncRoute(async (req, res) => {
+    requireAdminSession, async (req, res) => {
         const rawKey = req.params.key;
 
         if (typeof rawKey !== "string") {
@@ -74,5 +75,4 @@ manualAvailabilityRouter.put(
             ok: true,
             category: saved,
         });
-    }),
-);
+    });

@@ -17,84 +17,113 @@
 </head>
 
 <body>
-<main class="admin">
-  <header>
-    <h1>
-      Availability Admin
-    </h1>
+  <main class="admin-shell">
+    <section class="admin-card">
 
-    <p>
-      Update manually maintained
-      appointment availability.
-    </p>
-  </header>
+      <header class="admin-header">
+        <p class="eyebrow">
+          ChimeraLabs
+        </p>
 
-  <section class="card">
-    <label>
-      Category
+        <h1>
+          Availability Admin
+        </h1>
 
-      <select id="category">
-        <option value="">
-          Select category
-        </option>
-      </select>
-    </label>
+        <p id="subtitle" class="subtitle">
+          Checking authentication...
+        </p>
+      </header>
 
-    <div class="fields">
-      <label>
-        Next available date
+      <div id="loadingView" class="view">
+        <div class="spinner"></div>
+      </div>
 
-        <input
-                id="date"
-                type="date"
-        >
-      </label>
+      <div id="loginView" class="view hidden">
+        <form id="loginForm" autocomplete="off">
+          <label for="totpCode">
+            Authenticator code
+          </label>
 
-      <label>
-        Next available time
+          <input id="totpCode" name="code" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="000000" required>
 
-        <input
-                id="time"
-                type="time"
-        >
-      </label>
-    </div>
+          <p id="loginError" class="message error hidden"></p>
 
-    <div class="actions">
-      <button
-              id="noAvailability"
-              type="button"
-              class="secondary"
-      >
-        No availability
-      </button>
+          <button id="loginButton" type="submit">
+            Sign in
+          </button>
+        </form>
+      </div>
 
-      <button
-              id="save"
-              type="button"
-      >
-        Save
-      </button>
-    </div>
+      <div id="adminView" class="view hidden">
+        <div class="status-row">
+          <div>
+            <span class="status-dot"></span>
+            Authenticated
+          </div>
 
-    <p
-            id="status"
-            aria-live="polite"
-    ></p>
-  </section>
+          <button id="logoutButton" class="secondary-button" type="button">
+            Log out
+          </button>
+        </div>
 
-  <section class="card">
-    <h2>
-      Current values
-    </h2>
+        <div class="admin-content">
+          <h2>
+            System overview
+          </h2>
 
-    <div id="current"></div>
-  </section>
-</main>
+          <div class="status-grid">
 
-<script
-        type="module"
-        src="/admin/admin.js"
-></script>
+            <article class="status-card">
+              <p class="status-label">
+                Admin session
+              </p>
+
+              <strong>
+                Authenticated
+              </strong>
+
+              <p class="status-description">
+                Secure TOTP session active.
+              </p>
+            </article>
+
+            <article class="status-card">
+              <p class="status-label">
+                Browser
+              </p>
+
+              <strong id="browserStatusValue">
+                Loading...
+              </strong>
+
+              <p id="browserStatusMessage" class="status-description">
+                Checking browser status...
+              </p>
+            </article>
+
+            <article class="status-card">
+              <p class="status-label">
+                Readiness
+              </p>
+
+              <strong id="browserReadyValue">
+                Loading...
+              </strong>
+
+              <p id="browserReadyMessage" class="status-description">
+              Waiting for browser status...
+              </p>
+            </article>
+
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <script src="/admin/admin.js" defer></script>
 </body>
 </html>

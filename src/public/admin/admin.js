@@ -1,204 +1,328 @@
-const category =
+const loadingView =
     document.getElementById(
-        "category",
+        "loadingView",
     );
 
-const date =
+const loginView =
     document.getElementById(
-        "date",
+        "loginView",
     );
 
-const time =
+const adminView =
     document.getElementById(
-        "time",
+        "adminView",
     );
 
-const saveButton =
+const subtitle =
     document.getElementById(
-        "save",
+        "subtitle",
     );
 
-const noAvailabilityButton =
+const loginForm =
     document.getElementById(
-        "noAvailability",
+        "loginForm",
     );
 
-const status =
+const totpCode =
     document.getElementById(
-        "status",
+        "totpCode",
     );
 
-const current =
+const loginButton =
     document.getElementById(
-        "current",
+        "loginButton",
     );
 
-let categories = [];
+const loginError =
+    document.getElementById(
+        "loginError",
+    );
 
-async function load() {
-    const response =
-        await fetch(
-            "/api/manual-availability",
-        );
+const logoutButton =
+    document.getElementById(
+        "logoutButton",
+    );
 
-    const data =
-        await response.json();
+const browserStatusValue = document.getElementById("browserStatusValue");
+const browserStatusMessage = document.getElementById("browserStatusMessage");
+const browserReadyValue = document.getElementById("browserReadyValue");
+const browserReadyMessage = document.getElementById("browserReadyMessage");
 
-    categories =
-        data.categories ?? [];
+function showView(view) {
+    loadingView.classList.add(
+        "hidden",
+    );
 
-    category.innerHTML = `
-        <option value="">
-            Select category
-        </option>
+    loginView.classList.add(
+        "hidden",
+    );
 
-        ${categories
-        .map(
-            (item) => `
-                    <option
-                        value="${item.key}"
-                    >
-                        ${item.label}
-                    </option>
-                `,
-        )
-        .join("")}
-    `;
+    adminView.classList.add(
+        "hidden",
+    );
 
-    renderCurrent();
+    view.classList.remove(
+        "hidden",
+    );
 }
 
-category.addEventListener(
-    "change",
-    () => {
-        const selected =
-            categories.find(
-                (item) =>
-                    item.key ===
-                    category.value,
+function showLogin() {
+    subtitle.textContent =
+        "Enter the current code from your authenticator.";
+
+    loginError.classList.add(
+        "hidden",
+    );
+
+    loginError.textContent = "";
+
+    showView(loginView);
+
+    totpCode.focus();
+}
+
+function showAdmin() {
+    subtitle.textContent =
+        "Administrator session active.";
+
+    showView(adminView);
+
+    loadBrowserStatus();
+}
+
+async function loadBrowserStatus() {
+    browserStatusValue.textContent = "Loading...";
+    browserStatusMessage.textContent = "Checking browser status...";
+    browserReadyValue.textContent = "Loading...";
+    browserReadyMessage.textContent = "Waiting for browser status...";
+
+    try {
+        const response =
+            await fetch(
+                "/api/browser-status",
+                {
+                    credentials:
+                        "same-origin",
+                },
             );
 
-        date.value =
-            selected
-                ?.nextAvailableDate ??
-            "";
+        if (response.status === 401) {
+            showLogin();
+            return;
+        }
 
-        time.value =
-            selected
-                ?.nextAvailableTime ??
-            "";
+        const data = await response.json();
 
-        status.textContent = "";
-    },
-);
+        if (!response.ok) {
+            browserStatusValue.textContent = "Unavailable";
+            browserStatusMessage.textContent = data.message ?? "Unable to read browser status.";
 
-saveButton.addEventListener(
-    "click",
-    () => {
-        void save(
-            date.value || null,
-            time.value || null,
-        );
-    },
-);
+            browserReadyValue.textContent = "Unknown";
+            browserReadyMessage.textContent = "Browser readiness could not be determined.";
+            return;
+        }
 
-noAvailabilityButton.addEventListener(
-    "click",
-    () => {
-        date.value = "";
-        time.value = "";
+        browserStatusValue.textContent = data.browserOpen ? "Open" : "Closed";
+        browserStatusMessage.textContent = data.message ?? "No status message.";
 
-        void save(
-            null,
-            null,
-        );
-    },
-);
+        browserReadyValue.textContent = data.ready ? "Ready" : "Not ready";
 
-async function save(
-    nextAvailableDate,
-    nextAvailableTime,
-) {
-    if (!category.value) {
-        status.textContent =
-            "Select a category first.";
+        browserReadyMessage.textContent = data.ready ? "Browser is ready for scraper operations." : "Browser is not ready for scraper operations.";
 
-        return;
+    } catch (error) {
+        console.error("Unable to load browser status:", error,);
+
+        browserStatusValue.textContent = "Unavailable";
+        browserStatusMessage.textContent = "Unable to contact the server.";
+
+        browserReadyValue.textContent = "Unknown";
+        browserReadyMessage.textContent = "Unable to determine readiness.";
     }
+}
 
-    status.textContent =
-        "Saving...";
-
-    const response =
-        await fetch(
-            `/api/manual-availability/${encodeURIComponent(category.value)}`,
-            {
-                method: "PUT",
-
-                headers: {
-                    "content-type":
-                        "application/json",
+async function checkSession() {
+    try {
+        const response =
+            await fetch(
+                "/api/admin/session",
+                {
+                    credentials:
+                        "same-origin",
                 },
+            );
 
-                body: JSON.stringify({
-                    nextAvailableDate,
-                    nextAvailableTime,
-                }),
-            },
+        if (!response.ok) {
+            showLogin();
+            return;
+        }
+
+        const data =
+            await response.json();
+
+        if (
+            data.authenticated ===
+            true
+        ) {
+            showAdmin();
+            return;
+        }
+
+        showLogin();
+    } catch (error) {
+        console.error(
+            "Unable to check admin session:",
+            error,
         );
 
-    const data =
-        await response.json();
+        subtitle.textContent =
+            "Unable to contact the server.";
 
-    if (!response.ok) {
-        status.textContent =
-            data.error ??
-            "Could not save.";
-
-        return;
+        showLogin();
     }
-
-    status.textContent =
-        "Saved";
-
-    await load();
-
-    category.value =
-        data.category.key;
-
-    date.value =
-        data.category
-            .nextAvailableDate ??
-        "";
-
-    time.value =
-        data.category
-            .nextAvailableTime ??
-        "";
 }
 
-function renderCurrent() {
-    current.innerHTML =
-        categories
-            .map(
-                (item) => `
-                    <div class="current-row">
-                        <strong>
-                            ${item.label}
-                        </strong>
+loginForm.addEventListener(
+    "submit",
+    async (event) => {
+        event.preventDefault();
 
-                        <span>
-                            ${
-                    item.nextAvailableDate
-                        ? `${item.nextAvailableDate}
-                                       ${item.nextAvailableTime ?? ""}`
-                        : "No availability"
-                }
-                        </span>
-                    </div>
-                `,
-            )
-            .join("");
-}
+        const code =
+            totpCode.value.trim();
 
-void load();
+        loginError.classList.add(
+            "hidden",
+        );
+
+        if (
+            !/^\d{6}$/.test(code)
+        ) {
+            loginError.textContent =
+                "Enter a valid 6-digit code.";
+
+            loginError.classList.remove(
+                "hidden",
+            );
+
+            return;
+        }
+
+        loginButton.disabled =
+            true;
+
+        loginButton.textContent =
+            "Signing in…";
+
+        try {
+            const response =
+                await fetch(
+                    "/api/admin/auth",
+                    {
+                        method: "POST",
+
+                        credentials:
+                            "same-origin",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json",
+                        },
+
+                        body:
+                            JSON.stringify({
+                                code,
+                            }),
+                    },
+                );
+
+            const data =
+                await response
+                    .json()
+                    .catch(
+                        () => ({}),
+                    );
+
+            if (
+                response.status ===
+                429
+            ) {
+                loginError.textContent =
+                    data.error ??
+                    "Too many attempts. Try again later.";
+
+                loginError.classList.remove(
+                    "hidden",
+                );
+
+                return;
+            }
+
+            if (!response.ok) {
+                loginError.textContent =
+                    data.error ??
+                    "Authentication failed.";
+
+                loginError.classList.remove(
+                    "hidden",
+                );
+
+                totpCode.select();
+
+                return;
+            }
+
+            totpCode.value = "";
+
+            showAdmin();
+        } catch (error) {
+            console.error(
+                "Admin login failed:",
+                error,
+            );
+
+            loginError.textContent =
+                "Unable to contact the server.";
+
+            loginError.classList.remove(
+                "hidden",
+            );
+        } finally {
+            loginButton.disabled =
+                false;
+
+            loginButton.textContent =
+                "Sign in";
+        }
+    },
+);
+
+logoutButton.addEventListener(
+    "click",
+    async () => {
+        logoutButton.disabled =
+            true;
+
+        try {
+            await fetch(
+                "/api/admin/logout",
+                {
+                    method: "POST",
+
+                    credentials:
+                        "same-origin",
+                },
+            );
+        } catch (error) {
+            console.error(
+                "Logout failed:",
+                error,
+            );
+        } finally {
+            logoutButton.disabled =
+                false;
+
+            showLogin();
+        }
+    },
+);
+
+checkSession();

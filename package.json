@@ -7,11 +7,16 @@
     "dev": "tsx watch src/server.ts",
     "typecheck": "tsc --noEmit",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "admin:setup": "tsx scripts/createAdminTotp.ts",
+    "admin:test": "tsx scripts/testAdminTotp.ts",
+    "admin:security-test": "bash scripts/testAdminSecurity.sh",
+    "admin:rotate": "tsx scripts/rotateAdminTotp.ts"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
     "@types/node": "^24.0.0",
+    "@types/qrcode-terminal": "^0.12.2",
     "tsx": "^4.0.0",
     "typescript": "^5.5.3"
   },
@@ -23,6 +28,9 @@
   "dependencies": {
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "playwright": "^1.59.1"
+    "express-rate-limit": "^8.7.0",
+    "otpauth": "^9.5.2",
+    "playwright": "^1.59.1",
+    "qrcode-terminal": "^0.12.0"
   }
 }

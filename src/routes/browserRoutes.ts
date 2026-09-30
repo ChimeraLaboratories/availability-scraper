@@ -5,6 +5,7 @@ import {goToBookingSite} from "../services/siteNavigationService.js";
 import {continueBrowserSession, openBrowserSession} from "../services/browserControlService.js";
 import {getBrowserCookies} from "../services/browserDebugService.js";
 import {persistBrowserState, readBrowserStatus} from "../services/browserStateService.js";
+import {appConfig} from "../config/app.js";
 
 export const browserRouter = Router();
 
@@ -142,6 +143,16 @@ browserRouter.get(
 browserRouter.get(
     "/debug-cookies",
     async (_req, res) => {
+
+        if (!appConfig.enableBrowserDebug) {
+            return res
+                .status(404)
+                .json({
+                    ok: false,
+                    error: "Not found",
+                });
+        }
+
         try {
             const result = await getBrowserCookies();
 
