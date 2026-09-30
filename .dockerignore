@@ -31,4 +31,4 @@ coverage
 # Build/dev output
 dist
 out-tsc
-coverage
+coveragedata/browser-profile/

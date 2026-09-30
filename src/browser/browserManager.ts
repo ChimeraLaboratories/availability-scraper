@@ -133,10 +133,19 @@ async function getRemoteWebSocketUrl(
                 : `${cdpUrl}/`,
         );
 
-    const response =
-        await fetch(
-            versionUrl,
-        );
+    console.log(`[CDP] Checking: ${versionUrl.toString()}`);
+
+    let response: Response;
+
+    try {
+        response = await fetch(versionUrl, { signal: AbortSignal.timeout(5000)});
+    } catch (error: unknown) {
+        console.error("[CDP] Failed to reach remote browser:", error);
+
+        throw error;
+    }
+
+    console.log(`[CDP] /json/version status: ${response.status}`);
 
     if (!response.ok) {
         throw new Error(
@@ -155,10 +164,9 @@ async function getRemoteWebSocketUrl(
         );
     }
 
-    const websocketUrl =
-        new URL(
-            data.webSocketDebuggerUrl,
-        );
+    const websocketUrl = new URL(data.webSocketDebuggerUrl);
+
+    console.log(`[CDP] WebSocket URL: ${websocketUrl.toString()}`);
 
     const publicCdpUrl =
         new URL(

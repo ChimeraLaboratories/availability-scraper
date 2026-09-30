@@ -38,6 +38,14 @@ function requireEnvironmentVariable(
     return cleanedValue;
 }
 
+function parseBoolean(value: string | undefined, defaultValue = false): boolean {
+    if (value === undefined) {
+        return defaultValue;
+    }
+
+    return value.trim().toLowerCase() === "true";
+}
+
 const publicDirectory = path.resolve(
     process.cwd(),
     "src/public",
@@ -69,4 +77,8 @@ export const appConfig = {
         publicDirectory,
         "index.html",
     ),
+
+    adminTotpSecret: process.env.ADMIN_TOTP_SECRET?.trim() || null,
+
+    enableBrowserDebug: parseBoolean(process.env.ENABLE_BROWSER_DEBUG, false),
 } as const;
