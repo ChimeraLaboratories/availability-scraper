@@ -17,15 +17,29 @@ import {
     getAdminCookie,
     setAdminCookie,
 } from "../auth/adminCookie.js";
-import {adminRateLimiter} from "../middleware/adminRateLimiter.js";
-import {writeAdminAuditEvent} from "../services/adminAuditService.js";
-import {write} from "node:fs";
+
+import {
+    adminRateLimiter,
+} from "../middleware/adminRateLimiter.js";
+
+import {
+    requireAdminSession,
+} from "../middleware/requireAdminSession.js";
+
+import {
+    writeAdminAuditEvent,
+} from "../services/adminAuditService.js";
+
+import {
+    appConfig,
+} from "../config/app.js";
 
 export const adminAuthRouter =
     Router();
 
 adminAuthRouter.post(
-    "/auth", adminRateLimiter,
+    "/auth",
+    adminRateLimiter,
     (req, res) => {
         const code =
             typeof req.body.code ===
@@ -39,8 +53,10 @@ adminAuthRouter.post(
             )
         ) {
             void writeAdminAuditEvent({
-                event: "ADMIN_AUTH_FAILED",
-                ip: req.ip,
+                event:
+                    "ADMIN_AUTH_FAILED",
+                ip:
+                    req.ip,
             });
 
             return res
@@ -61,8 +77,10 @@ adminAuthRouter.post(
         );
 
         void writeAdminAuditEvent({
-            event: "ADMIN_AUTH_SUCCESS",
-            ip: req.ip,
+            event:
+                "ADMIN_AUTH_SUCCESS",
+            ip:
+                req.ip,
         });
 
         return res.json({
@@ -82,7 +100,6 @@ adminAuthRouter.get(
                 token,
             )
         ) {
-
             return res
                 .status(401)
                 .json({
@@ -99,6 +116,26 @@ adminAuthRouter.get(
     },
 );
 
+adminAuthRouter.get(
+    "/diagnostics",
+    requireAdminSession,
+    (_req, res) => {
+        return res.json({
+            ok: true,
+            browserDebugEnabled:
+                appConfig.enableBrowserDebug,
+            totpConfigured:
+                Boolean(
+                    appConfig.adminTotpSecret,
+                ),
+            sessionStorage:
+                "memory",
+            serverTime:
+                new Date().toISOString(),
+        });
+    },
+);
+
 adminAuthRouter.post(
     "/logout",
     (req, res) => {
@@ -110,8 +147,10 @@ adminAuthRouter.post(
         );
 
         void writeAdminAuditEvent({
-            event: "ADMIN_LOGOUT",
-            ip: req.ip,
+            event:
+                "ADMIN_LOGOUT",
+            ip:
+                req.ip,
         });
 
         clearAdminCookie(
