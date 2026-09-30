@@ -33,6 +33,12 @@ const refreshManualButton = document.getElementById("refreshManualButton");
 const manualAvailabilityLoading = document.getElementById("manualAvailabilityLoading");
 const manualAvailabilityGrid = document.getElementById("manualAvailabilityGrid");
 
+const totpConfigBadge = document.getElementById("totpConfigBadge");
+const totpConfigValue = document.getElementById("totpConfigValue");
+const browserDebugBadge = document.getElementById("browserDebugBadge");
+const browserDebugValue = document.getElementById("browserDebugValue");
+const sessionStorageValue = document.getElementById("sessionStorageValue");
+
 const MANUAL_KEYS = new Set(["mecs", "ground-floor"]);
 let browserStatusTimer = null;
 
@@ -99,6 +105,7 @@ function showAdmin() {
     void Promise.all([
         loadBrowserStatus(),
         loadManualAvailability(),
+        loadDiagnostics(),
     ]);
 }
 
@@ -318,6 +325,47 @@ function createManualCard(category) {
     });
 
     return card;
+}
+
+async function loadDiagnostics() {
+    try {
+        const response = await apiFetch("/api/admin/diagnostics");
+        const data = await response.json();
+
+        if (!response.ok || data.ok !== true) {
+            throw new Error(data.error ?? "Unable to load diagnostics.");
+        }
+
+        totpConfigValue.textContent = data.totpConfigured ? "Configured" : "Not configured";
+        setBadge(
+            totpConfigBadge,
+            data.totpConfigured ? "Ready" : "Missing",
+            data.totpConfigured ? "success" : "danger",
+        );
+
+        browserDebugValue.textContent = data.browserDebugEnabled ? "Enabled" : "Disabled";
+        setBadge(
+            browserDebugBadge,
+            data.browserDebugEnabled ? "Enabled" : "Off",
+            data.browserDebugEnabled ? "warning" : "success",
+        );
+
+        sessionStorageValue.textContent =
+            data.sessionStorage === "memory"
+                ? "In-memory"
+                : String(data.sessionStorage ?? "Unknown");
+    } catch (error) {
+        if (error instanceof Error && error.message === "Authentication required.") {
+            return;
+        }
+
+        console.error("Unable to load admin diagnostics:", error);
+        totpConfigValue.textContent = "Unavailable";
+        browserDebugValue.textContent = "Unavailable";
+        sessionStorageValue.textContent = "Unavailable";
+        setBadge(totpConfigBadge, "Error", "danger");
+        setBadge(browserDebugBadge, "Error", "danger");
+    }
 }
 
 async function loadManualAvailability() {
