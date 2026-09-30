@@ -115,6 +115,45 @@
         <section class="section">
           <div class="section-heading">
             <div>
+              <p class="section-kicker">Diagnostics</p>
+              <h2>Admin configuration</h2>
+              <p>Safe operational diagnostics only. Secrets, session tokens and browser cookies are never shown here.</p>
+            </div>
+          </div>
+
+          <div class="status-grid">
+            <article class="status-card">
+              <div class="status-card-heading">
+                <span class="status-label">TOTP</span>
+                <span id="totpConfigBadge" class="status-badge neutral">Checking</span>
+              </div>
+              <strong id="totpConfigValue">Loading...</strong>
+              <p class="status-description">Admin credential configuration.</p>
+            </article>
+
+            <article class="status-card">
+              <div class="status-card-heading">
+                <span class="status-label">Browser debug</span>
+                <span id="browserDebugBadge" class="status-badge neutral">Checking</span>
+              </div>
+              <strong id="browserDebugValue">Loading...</strong>
+              <p class="status-description">Sensitive browser diagnostics are disabled unless explicitly enabled.</p>
+            </article>
+
+            <article class="status-card">
+              <div class="status-card-heading">
+                <span class="status-label">Sessions</span>
+                <span class="status-badge success">Protected</span>
+              </div>
+              <strong id="sessionStorageValue">Loading...</strong>
+              <p class="status-description">Admin sessions are server-side and cleared when the process restarts.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-heading">
+            <div>
               <p class="section-kicker">Manual availability</p>
               <h2>MECS &amp; Ground Floor</h2>
               <p>Update the manually maintained next-available date and time shown on the public dashboard.</p>
