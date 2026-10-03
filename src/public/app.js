@@ -16,12 +16,12 @@ const refreshBtn =
 
 const availabilityTitleEl = document.getElementById("availabilityTitle");
 
-console.log(
-    "LOADED: app.js",
-);
+console.log("LOADED: app.js",);
 
-const AUTO_REFRESH_INTERVAL =
-    60 * 1000;
+const AUTO_REFRESH_INTERVAL = 60 * 1000;
+
+// Change this back to true before pushing to GitHub!!!
+const AUTO_REFRESH_ENABLED = true;
 
 let isLoading = false;
 let refreshTimer = null;
@@ -525,17 +525,12 @@ function renderCategories(
                     );
                 }
 
-                const rowClasses = [
-                    "availability-row",
-                ];
+                const rowClasses = ["availability-row",];
 
-                if (
-                    !hasAvailability &&
-                    !hasError
-                ) {
-                    rowClasses.push(
-                        "no-availability",
-                    );
+                if (hasError) {
+                    rowClasses.push("has-error");
+                } else if (!hasAvailability) {
+                    rowClasses.push("no-availability");
                 }
 
                 /*
@@ -731,17 +726,15 @@ async function loadDashboard() {
 }
 
 function scheduleNextRefresh() {
-    clearTimeout(
-        refreshTimer,
-    );
+    clearTimeout(refreshTimer);
 
-    refreshTimer =
-        setTimeout(
-            () => {
-                void refreshDashboard();
-            },
-            AUTO_REFRESH_INTERVAL,
-        );
+    if (!AUTO_REFRESH_ENABLED) {
+        return;
+    }
+
+    refreshTimer = setTimeout(() => {
+        void refreshDashboard();
+    }, AUTO_REFRESH_INTERVAL);
 }
 
 async function refreshDashboard() {
