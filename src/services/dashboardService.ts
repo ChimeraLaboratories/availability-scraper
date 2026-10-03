@@ -147,47 +147,50 @@ export async function getDashboardAvailability(
                     days:
                     filtered,
                 });
-            } catch (
-                error: unknown
-                ) {
+            } catch (error: unknown) {
+                const message = getErrorMessage(error);
+
+                console.error("[Availability] Category failed", {
+                    category: category.key,
+                    lineOfBusiness: category.lineOfBusiness,
+                    error: message,
+                });
+
+                /*
+                 * Keep upstream Hearcare errors simple on the dashboard.
+                 * The actual error is still written to the server log.
+                 */
+
+                const displayedError =
+                    category.lineOfBusiness === "AUDIOLOGY" &&
+                    message.startsWith("GraphQL availability request failed:")
+                        ? "Hearcare availability temporarily unavailable"
+                        : message;
+
                 results.push({
-                    key:
-                    category.key,
+                    key: category.key,
 
-                    label:
-                    category.label,
+                    label: category.label,
 
-                    lineOfBusiness:
-                    category.lineOfBusiness,
+                    lineOfBusiness: category.lineOfBusiness,
 
-                    slotType:
-                    category.slotType,
+                    slotType: category.slotType,
 
-                    filters:
-                    category.filters,
+                    filters: category.filters,
 
-                    error:
-                        getErrorMessage(
-                            error,
-                        ),
+                    error: displayedError,
 
-                    nextAvailableDate:
-                        null,
+                    nextAvailableDate: null,
 
-                    nextAvailableTime:
-                        null,
+                    nextAvailableTime: null,
 
-                    nextAvailableLabel:
-                        null,
+                    nextAvailableLabel: null,
 
-                    totalDays:
-                        0,
+                    totalDays: 0,
 
-                    totalSlots:
-                        0,
+                    totalSlots: 0,
 
-                    days:
-                        [],
+                    days: [],
                 });
             }
         }
