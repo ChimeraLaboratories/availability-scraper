@@ -73,21 +73,19 @@ export async function fetchAvailabilityFromPage(
         );
     }
 
-    if (
-        parsed.errors &&
-        parsed.errors.length > 0
-    ) {
-        const message =
-            parsed.errors
-                .map(
-                    (error) =>
-                        error.message,
-                )
-                .join(", ");
+    if (parsed.errors?.length) {
+        console.error("[Availability] GraphQL error", {
+            storeNumber: request.storeNumber,
+            slotType: request.slotType,
+            lineOfBusiness: request.lineOfBusiness ?? "OPTICAL",
+            errors: parsed.errors,
+        });
 
-        throw new Error(
-            `GraphQL availability request failed: ${message}`,
-        );
+        const message = parsed.errors
+            .map((error) => error.message)
+            .join(", ");
+
+        throw new Error(`GraphQL availability request failed: ${message}`);
     }
 
     const storeAppointmentSlots = parsed.data?.storeAppointmentSlots;

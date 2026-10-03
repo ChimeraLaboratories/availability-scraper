@@ -21,3 +21,6 @@ dist/
 data/
 browser-profile/data/browser-profile/
 data/browser-profile/
+
+# TOTP Tests
+cookies.txt
