@@ -653,8 +653,19 @@ body {
 .availability-row.no-availability {
     background: #fff9f1;
 
-    border-left:
-            5px solid #f59e0b;
+    border-left: 5px solid #f59e0b;
+
+    padding-left: 13px;
+}
+
+/* --------------------------------------------------
+   ERROR
+-------------------------------------------------- */
+
+.availability-row.has-error {
+    background: #fff5f5;
+
+    border-left: 5px solid #ef4444;
 
     padding-left: 13px;
 }
