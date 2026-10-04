@@ -47,38 +47,25 @@ function extractCookieValue(
     return value;
 }
 
-export async function installSpecsaversCookie(
-    context: BrowserContext,
-): Promise<void> {
-    const configuredValue =
-        appConfig.specsaversCookie;
-
-    if (!configuredValue) {
-        console.log(
-            "SPECSAVERS_COOKIE not configured; using existing browser session.",
-        );
-
+export async function installSpecsaversCookie(context: BrowserContext,): Promise<void> {
+    if (!appConfig.specsaversCookie) {
+        console.log("No SPECSAVERS_COOKIE configured; using existing browser session.",);
         return;
     }
 
-    const value =
-        extractCookieValue(
-            configuredValue,
-        );
+    const value = extractCookieValue(appConfig.specsaversCookie,);
 
-    console.log(
-        "Installing Specsavers cf_clearance cookie...",
-    );
+    console.log("Installing configured Specsavers cf_clearance cookie...",);
 
     await context.addCookies([
         {
             name: "cf_clearance",
             value,
+
+            // Let Chromium derive domain/path from the URL.
             url: "https://www.specsavers.co.uk/",
         },
     ]);
 
-    console.log(
-        "Specsavers cf_clearance cookie installed.",
-    );
+    console.log("Configured Specsavers cf_clearance cookie installed.",);
 }
