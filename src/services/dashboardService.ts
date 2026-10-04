@@ -156,7 +156,8 @@ export async function getDashboardAvailability(
                     });
 
                     await sendDeveloperNotification(
-                        `✅ ${category.label} availability restored`, `${storeNumber} ${category.label} availability is working again after ${recovery.previousFailures} consecutive failed checks.`,
+                        `✅ Availability Restored — ${category.label}`,
+                        `Store ${storeNumber} • Scraping successfully again after ${recovery.previousFailures} failed checks.`,
                     );
                 }
 
@@ -172,7 +173,10 @@ export async function getDashboardAvailability(
                         error: message
                     });
 
-                    await sendDeveloperNotification(`⚠️ ${category.label} availability error`, `Store ${storeNumber} has failed ${failure.consecutiveFailures} consecutive ${category.label} availability checks.`);
+                    await sendDeveloperNotification(
+                        `⚠️ Availability Error — ${category.label}`,
+                        `Store ${storeNumber} • Failed ${failure.consecutiveFailures} consecutive checks`,
+                    );
                 }
 
                 console.error("[Availability] Category failed", {
