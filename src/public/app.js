@@ -1,18 +1,10 @@
-const statusEl =
-    document.getElementById("status");
+const statusEl = document.getElementById("status");
 
-const nextEl =
-    document.getElementById(
-        "nextAvailable",
-    );
+const nextEl = document.getElementById("nextAvailable");
 
-const listEl =
-    document.getElementById("list");
+const listEl = document.getElementById("list");
 
-const refreshBtn =
-    document.getElementById(
-        "refreshBtn",
-    );
+const refreshBtn = document.getElementById("refreshBtn");
 
 const availabilityTitleEl = document.getElementById("availabilityTitle");
 
@@ -765,3 +757,74 @@ refreshBtn.addEventListener(
 );
 
 void refreshDashboard();
+
+async function subscribeToPushNotifications() {
+    const registration = await navigator.serviceWorker.ready;
+
+    const permission = await Notification.requestPermission();
+
+    if (permission !== "granted") {
+        throw new Error("Notification permission was not granted.");
+    }
+
+    const response = await fetch("/api/push/public-key");
+
+    if (!response.ok) {
+        throw new Error("Unable to retrieve the Web Push public key.");
+    }
+
+    const { publicKey } = await response.json();
+
+    const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: publicKey
+    });
+
+    const subscribeResponse = await fetch("/api/push/subscribe", {
+        method: "POST",
+        headers: {
+            "Content-Type":
+                "application/json"
+        },
+        body: JSON.stringify(subscription)
+    });
+
+    if (!subscribeResponse.ok) {
+        throw new Error("Unable to register the push subscription with the server.");
+    }
+
+    console.log("[PUSH] Device subscribed successfully.");
+
+    return subscription;
+}
+
+async function registerServiceWorker() {
+    if(!("serviceWorker" in navigator)) {
+        console.warn("[PUSH] Service workers are not supported by this browser.");
+        return;
+    }
+
+    try {
+        const registration = await navigator.serviceWorker.register("/sw.js");
+
+        console.log("[PUSH] Service worker registered:", registration.scope);
+    } catch (error) {
+        console.error("[PUSH] Service worker registration failed:", error);
+    }
+}
+
+void registerServiceWorker();
+
+const enablePushButton = document.getElementById("enablePushNotifications");
+
+enablePushButton?.addEventListener("click", async () => {
+    try {
+        await subscribeToPushNotifications();
+
+        enablePushButton.textContent = "Notifications enabled";
+
+        enablePushButton.disabled = true;
+    } catch (error) {
+        console.error("[PUSH] Unable to enable notifications", error);
+    }
+});
