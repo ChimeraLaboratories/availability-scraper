@@ -887,3 +887,20 @@ prefers-reduced-motion:
         animation: none;
     }
 }
+
+#enablePushNotifications {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 99999;
+
+    padding: 12px 18px;
+
+    background: white;
+    color: black;
+    border: 2px solid black;
+    border-radius: 6px;
+
+    font-size: 14px;
+    cursor: pointer;
+}

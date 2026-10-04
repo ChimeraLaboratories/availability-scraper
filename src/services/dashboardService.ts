@@ -35,6 +35,8 @@ import {
     getDashboardCache,
     saveDashboardCache,
 } from "./dashboardCacheService.js";
+import {recordAvailabilityFailure, recordAvailabilitySuccess} from "../notifications/availabilityAlertService.js";
+import {sendDeveloperNotification} from "../notifications/developerNotificationService.js";
 
 export async function getDashboardAvailability(
     storeNumber: string,
@@ -55,10 +57,7 @@ export async function getDashboardAvailability(
      * the scraper schedule is active.
      */
     if (schedule.active) {
-        for (
-            const category of
-            dashboardCategories
-            ) {
+        for (const category of dashboardCategories) {
             try {
                 const raw =
                     await fetchAvailabilityInBrowser(
@@ -147,8 +146,34 @@ export async function getDashboardAvailability(
                     days:
                     filtered,
                 });
+
+                const recovery = recordAvailabilitySuccess(category.key);
+
+                if (recovery.recovered) {
+                    console.log("[AVAILABILITY] Category recovered", {
+                        category: category.key,
+                        previousFailures: recovery.previousFailures
+                    });
+
+                    await sendDeveloperNotification(
+                        `✅ ${category.label} availability restored`, `${storeNumber} ${category.label} availability is working again after ${recovery.previousFailures} consecutive failed checks.`,
+                    );
+                }
+
             } catch (error: unknown) {
                 const message = getErrorMessage(error);
+
+                const failure = recordAvailabilityFailure(category.key, message);
+
+                if (failure.shouldAlert) {
+                    console.error("[AVAILABILITY] Category reached alert threshold", {
+                        category: category.key,
+                        consecutiveFailures: failure.consecutiveFailures,
+                        error: message
+                    });
+
+                    await sendDeveloperNotification(`⚠️ ${category.label} availability error`, `Store ${storeNumber} has failed ${failure.consecutiveFailures} consecutive ${category.label} availability checks.`);
+                }
 
                 console.error("[Availability] Category failed", {
                     category: category.key,
