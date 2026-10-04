@@ -78,6 +78,17 @@ button:disabled {
     flex: 0 0 auto;
 }
 
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 0 0 auto;
+}
+
+.header-actions a {
+    text-decoration: none;
+}
+
 .eyebrow,
 .section-kicker {
     margin: 0 0 6px;
@@ -433,6 +444,15 @@ input:focus {
 
     .admin-header {
         flex-direction: column;
+    }
+
+    .header-actions {
+        width: 100%;
+    }
+
+    .header-actions .header-action {
+        flex: 1;
+        text-align: center;
     }
 
     .control-grid,
