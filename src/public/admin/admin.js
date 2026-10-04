@@ -42,6 +42,8 @@ const sessionStorageValue = document.getElementById("sessionStorageValue");
 const enablePushNotificationsButton = document.getElementById("enablePushNotificationsButton");
 const pushNotificationMessage = document.getElementById("pushNotificationMessage");
 
+const testPushNotificationButton = document.getElementById("testPushNotificationButton");
+
 const MANUAL_KEYS = new Set(["mecs", "ground-floor"]);
 let browserStatusTimer = null;
 
@@ -219,6 +221,55 @@ async function enablePushNotifications() {
         enablePushNotificationsButton.textContent = "Enable notifications on this device";
 
         setMessage(pushNotificationMessage, error instanceof Error ? `Unable to enable notifications: ${error.message}` : "Unable to enable notifications.", "error");
+    }
+}
+
+async function sendTestPushNotification() {
+    const originalText = testPushNotificationButton.textContent;
+
+    testPushNotificationButton.disabled = true;
+    testPushNotificationButton.textContent = "Sending...";
+    clearMessage(pushNotificationMessage);
+
+    try {
+        const response = await apiFetch("/api/push/test", {
+            method: "POST",
+        });
+
+        if (!response.ok) {
+            let message = `Unable to send test notification (${response.status}).`;
+
+            try {
+                const data = await response.json();
+
+                if (data.error) {
+                    message = data.error;
+                }
+            } catch {
+                // Response did not contain JSON.
+            }
+
+            throw new Error(message);
+        }
+
+        setMessage(
+            pushNotificationMessage,
+            "Test notification sent. Check this device for the notification.",
+            "success",
+        );
+    } catch (error) {
+        console.error("Unable to send test push notification:", error);
+
+        setMessage(
+            pushNotificationMessage,
+            error instanceof Error
+                ? `Unable to send test notification: ${error.message}`
+                : "Unable to send test notification.",
+            "error",
+        );
+    } finally {
+        testPushNotificationButton.disabled = false;
+        testPushNotificationButton.textContent = originalText;
     }
 }
 
@@ -767,6 +818,10 @@ document.addEventListener("visibilitychange", () => {
 
 enablePushNotificationsButton.addEventListener("click", () => {
     void enablePushNotifications();
+});
+
+testPushNotificationButton.addEventListener("click", () => {
+    void sendTestPushNotification();
 });
 
 checkSession();
