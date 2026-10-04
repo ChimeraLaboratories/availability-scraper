@@ -41,7 +41,11 @@ router.post("/test", requireAdminSession, async (_req, res) => {
 
     await Promise.all(subscriptions.map(async (subscription) => {
         try {
-            await sendPushNotification(subscription, "Availability Scraper", "Test notification receieved successfully.");
+            await sendPushNotification(
+                subscription,
+                "🔔 Availability Test",
+                "Notifications are working correctly on this device.",
+            );
         } catch (error: unknown) {
             const statusCode = typeof error === "object" && error !== null && "statusCode" in error ? error.statusCode : undefined;
 
