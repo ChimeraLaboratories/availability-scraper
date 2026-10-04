@@ -39,6 +39,9 @@ const browserDebugBadge = document.getElementById("browserDebugBadge");
 const browserDebugValue = document.getElementById("browserDebugValue");
 const sessionStorageValue = document.getElementById("sessionStorageValue");
 
+const enablePushNotificationsButton = document.getElementById("enablePushNotificationsButton");
+const pushNotificationMessage = document.getElementById("pushNotificationMessage");
+
 const MANUAL_KEYS = new Set(["mecs", "ground-floor"]);
 let browserStatusTimer = null;
 
@@ -95,6 +98,130 @@ function showLogin(message = "") {
     totpCode.focus();
 }
 
+async function loadPushNotificationStatus() {
+    clearMessage(pushNotificationMessage);
+
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+        enablePushNotificationsButton.disabled = true;
+        enablePushNotificationsButton.textContent = "Push notifications unavailable";
+        setMessage(pushNotificationMessage, "Push notifications are not supported on this device or browser.", "error",);
+        return;
+    }
+
+    if (Notification.permission === "denied") {
+        enablePushNotificationsButton.disabled = true;
+        enablePushNotificationsButton.textContent = "Notifications blocked";
+        setMessage(pushNotificationMessage, "Notification permission is blocked for this app.", "error",);
+        return;
+    }
+
+    try {
+        const registration = await navigator.serviceWorker.register("/sw.js");
+        const subscription = await registration.pushManager.getSubscription();
+
+        if (subscription) {
+            const response = await apiFetch("/api/push/subscribe", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(subscription),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Unable to synchronise this device subscription (${response.status}).`);
+            }
+
+            enablePushNotificationsButton.disabled = true;
+            enablePushNotificationsButton.textContent = "Notifications enabled";
+
+            setMessage(pushNotificationMessage, "This device is subscribed to developer notifications.", "success");
+            return;
+        }
+
+        enablePushNotificationsButton.disabled = false;
+        enablePushNotificationsButton.textContent = "Enable notifications on this device";
+
+        if (Notification.permission === "granted") {
+            setMessage(
+                pushNotificationMessage, "Notification permission is already allowed. This device can now be subscribed.", "info");
+        }
+    } catch (error) {
+        console.error("Unable to check push notification status:", error);
+
+        enablePushNotificationsButton.disabled = false;
+        enablePushNotificationsButton.textContent = "Enable notifications on this device";
+
+        setMessage(
+            pushNotificationMessage,
+            error instanceof Error ? `Unable to check notifications: ${error.message}` : "Unable to check notification status.", "error");
+    }
+}
+
+async function enablePushNotifications() {
+    enablePushNotificationsButton.disabled = true;
+    enablePushNotificationsButton.textContent = "Enabling...";
+    clearMessage(pushNotificationMessage);
+
+    try {
+        if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+            throw new Error("Push notifications are not supported on this device.");
+        }
+
+        const registration = await navigator.serviceWorker.register("/sw.js");
+
+        const permission = await Notification.requestPermission();
+
+        if (permission !== "granted") {
+            throw new Error(permission === "denied" ? "Notification permission was denied." : "Notification permission was not granted.");
+        }
+
+        let subscription = await registration.pushManager.getSubscription();
+
+        if (!subscription) {
+            const keyResponse = await apiFetch("/api/push/public-key");
+
+            if (!keyResponse.ok) {
+                throw new Error(`Unable to load push configuration (${keyResponse.status}).`);
+            }
+
+            const { publicKey } = await keyResponse.json();
+
+            if (!publicKey) {
+                throw new Error("Push public key is missing.");
+            }
+
+            subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: publicKey,
+            });
+        }
+
+        const response = await apiFetch("/api/push/subscribe", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(subscription),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Unable to register this device (${response.status}).`);
+        }
+
+        enablePushNotificationsButton.textContent = "Notifications enabled";
+
+        setMessage(pushNotificationMessage, "This device is now subscribed to developer notifications.", "success");
+    } catch (error) {
+        console.error("Unable to enable push notifications:", error);
+
+        enablePushNotificationsButton.disabled = false;
+        enablePushNotificationsButton.textContent = "Enable notifications on this device";
+
+        setMessage(pushNotificationMessage, error instanceof Error ? `Unable to enable notifications: ${error.message}` : "Unable to enable notifications.", "error");
+    }
+}
+
 function showAdmin() {
     logoutButton.classList.remove("hidden");
     subtitle.textContent = "Administrator session active.";
@@ -106,6 +233,7 @@ function showAdmin() {
         loadBrowserStatus(),
         loadManualAvailability(),
         loadDiagnostics(),
+        loadPushNotificationStatus(),
     ]);
 }
 
@@ -635,6 +763,10 @@ document.addEventListener("visibilitychange", () => {
     if (!document.hidden && !adminView.classList.contains("hidden")) {
         void loadBrowserStatus({ quiet: true });
     }
+});
+
+enablePushNotificationsButton.addEventListener("click", () => {
+    void enablePushNotifications();
 });
 
 checkSession();
