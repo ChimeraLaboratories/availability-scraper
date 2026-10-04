@@ -22,6 +22,7 @@ import {
 import {manualAvailabilityRouter} from "./routes/manualAvailabilityRoutes.js";
 import {adminAuthRouter} from "./auth/adminAuthRoutes.js";
 import {requireAdminSession} from "./middleware/requireAdminSession.js";
+import pushRoutes from "./routes/pushRoutes.js";
 
 export const app = express();
 
@@ -36,6 +37,7 @@ app.use(
 app.use("/api", dashboardRouter);
 app.use("/api/admin", adminAuthRouter);
 app.use("/api", manualAvailabilityRouter);
+app.use("/api/push", pushRoutes);
 app.use("/api", requireAdminSession, browserRouter);
 
 app.use("/api", notFoundHandler);
