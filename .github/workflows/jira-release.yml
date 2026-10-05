@@ -27,7 +27,7 @@ jobs:
           VERSION: ${{ inputs.version }}
         run: |
           if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Invalid release version: $VERSION"
+            echo "::error::Invalid release version: $VERSION"
             exit 1
           fi
 
@@ -35,6 +35,49 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: main
+          fetch-depth: 0
+
+      - name: Fetch latest main and tags
+        run: |
+          git fetch origin main --tags --force
+
+      - name: Capture and verify release commit
+        id: release_commit
+        run: |
+          RELEASE_SHA="$(git rev-parse HEAD)"
+          MAIN_SHA="$(git rev-parse origin/main)"
+
+          echo "Checked out SHA: $RELEASE_SHA"
+          echo "origin/main SHA:  $MAIN_SHA"
+
+          if [ "$RELEASE_SHA" != "$MAIN_SHA" ]; then
+            echo "::error::REFUSING RELEASE"
+            echo "::error::Checked-out commit does not match origin/main."
+            exit 1
+          fi
+
+          echo "sha=$RELEASE_SHA" >> "$GITHUB_OUTPUT"
+
+          echo "Release commit verified: $RELEASE_SHA"
+
+      - name: Ensure version does not already exist
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          if git rev-parse "$VERSION" >/dev/null 2>&1; then
+            echo "::error::Tag $VERSION already exists."
+            echo "::error::Release versions are immutable. Use a new version."
+            exit 1
+          fi
+
+          if gh release view "$VERSION" >/dev/null 2>&1; then
+            echo "::error::GitHub Release $VERSION already exists."
+            echo "::error::Use a new version."
+            exit 1
+          fi
+
+          echo "$VERSION is available."
 
       - name: Create release notes file
         env:
@@ -56,26 +99,65 @@ jobs:
             echo
           } > release-notes.md
 
+      - name: Create immutable release tag
+        env:
+          VERSION: ${{ inputs.version }}
+          RELEASE_SHA: ${{ steps.release_commit.outputs.sha }}
+        run: |
+          echo "Creating $VERSION at $RELEASE_SHA"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git tag -a "$VERSION" "$RELEASE_SHA" \
+            -m "$VERSION"
+
+          git push origin "refs/tags/$VERSION"
+
+      - name: Verify published release tag
+        env:
+          VERSION: ${{ inputs.version }}
+          RELEASE_SHA: ${{ steps.release_commit.outputs.sha }}
+        run: |
+          git fetch origin --tags --force
+
+          TAG_SHA="$(git rev-list -n 1 "$VERSION")"
+
+          echo "Release version: $VERSION"
+          echo "Expected SHA:    $RELEASE_SHA"
+          echo "Published SHA:   $TAG_SHA"
+
+          if [ "$TAG_SHA" != "$RELEASE_SHA" ]; then
+            echo "::error::REFUSING RELEASE"
+            echo "::error::$VERSION points to $TAG_SHA"
+            echo "::error::Expected $RELEASE_SHA"
+            exit 1
+          fi
+
+          echo "Release tag verification passed."
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ inputs.version }}
         run: |
-          if gh release view "$VERSION" >/dev/null 2>&1; then
-            echo "Release $VERSION already exists"
-          else
-            gh release create "$VERSION" \
-              --target main \
-              --title "$VERSION" \
-              --notes-file release-notes.md \
-              --generate-notes
-          fi
+          gh release create "$VERSION" \
+            --verify-tag \
+            --title "$VERSION" \
+            --notes-file release-notes.md \
+            --generate-notes
 
-      - name: Trigger production Docker build
+      - name: Trigger verified production Docker build
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ inputs.version }}
+          RELEASE_SHA: ${{ steps.release_commit.outputs.sha }}
         run: |
+          echo "Triggering production build"
+          echo "Release: $VERSION"
+          echo "Commit:  $RELEASE_SHA"
+
           gh workflow run docker-build.yml \
             --ref main \
-            -f release_tag="$VERSION"
+            -f release_tag="$VERSION" \
+            -f release_sha="$RELEASE_SHA"

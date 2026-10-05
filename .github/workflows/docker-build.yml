@@ -1,13 +1,15 @@
 name: Build and publish production Docker images
 
 on:
-  release:
-    types: [published]
-
   workflow_dispatch:
     inputs:
       release_tag:
         description: "Release tag to build, e.g. v1.0.0"
+        required: true
+        type: string
+
+      release_sha:
+        description: "Exact verified Git commit for this release"
         required: true
         type: string
 
@@ -24,13 +26,19 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.event.release.tag_name }}
+      RELEASE_TAG: ${{ inputs.release_tag }}
+      RELEASE_SHA: ${{ inputs.release_sha }}
 
     steps:
-      - name: Validate release tag
+      - name: Validate release inputs
         run: |
           if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Invalid release tag: $RELEASE_TAG"
+            echo "::error::Invalid release tag: $RELEASE_TAG"
+            exit 1
+          fi
+
+          if [[ ! "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Invalid release SHA: $RELEASE_SHA"
             exit 1
           fi
 
@@ -38,6 +46,35 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ env.RELEASE_TAG }}
+          fetch-depth: 0
+
+      - name: Verify release source
+        run: |
+          git fetch origin --tags --force
+
+          TAG_SHA="$(git rev-list -n 1 "$RELEASE_TAG")"
+          CHECKOUT_SHA="$(git rev-parse HEAD)"
+
+          echo "Release tag:  $RELEASE_TAG"
+          echo "Expected SHA: $RELEASE_SHA"
+          echo "Tag SHA:      $TAG_SHA"
+          echo "Checkout SHA: $CHECKOUT_SHA"
+
+          if [ "$TAG_SHA" != "$RELEASE_SHA" ]; then
+            echo "::error::REFUSING PRODUCTION BUILD"
+            echo "::error::$RELEASE_TAG points to $TAG_SHA"
+            echo "::error::Expected $RELEASE_SHA"
+            exit 1
+          fi
+
+          if [ "$CHECKOUT_SHA" != "$RELEASE_SHA" ]; then
+            echo "::error::REFUSING PRODUCTION BUILD"
+            echo "::error::Checked-out source is $CHECKOUT_SHA"
+            echo "::error::Expected $RELEASE_SHA"
+            exit 1
+          fi
+
+          echo "Release source verification passed."
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -54,9 +91,13 @@ jobs:
         with:
           context: .
           push: true
+          labels: |
+            org.opencontainers.image.version=${{ env.RELEASE_TAG }}
+            org.opencontainers.image.revision=${{ env.RELEASE_SHA }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
           tags: |
-            ghcr.io/chimeralaboratories/availability-scraper:prod
             ghcr.io/chimeralaboratories/availability-scraper:${{ env.RELEASE_TAG }}
+            ghcr.io/chimeralaboratories/availability-scraper:prod
 
       - name: Build and push browser
         uses: docker/build-push-action@v6
@@ -64,6 +105,10 @@ jobs:
           context: .
           file: docker/browser/Dockerfile
           push: true
+          labels: |
+            org.opencontainers.image.version=${{ env.RELEASE_TAG }}
+            org.opencontainers.image.revision=${{ env.RELEASE_SHA }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
           tags: |
-            ghcr.io/chimeralaboratories/availability-browser:prod
             ghcr.io/chimeralaboratories/availability-browser:${{ env.RELEASE_TAG }}
+            ghcr.io/chimeralaboratories/availability-browser:prod
