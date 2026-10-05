@@ -1248,4 +1248,29 @@ prefers-reduced-motion:
     .admin-link {
         justify-self: end;
     }
+
+    /* --------------------------------------------------
+        MOBILE ERROR ROW REFINEMENT
+        AS-99
+    -------------------------------------------------- */
+
+    /*
+     * Error details can use two lines on mobile so the
+     * useful part of the error isn't immediately hidden.
+     */
+    .availability-row.has-error .row-next-value {
+        display: -webkit-box;
+
+        overflow: hidden;
+
+        white-space: normal;
+
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+
+        line-clamp: 2;
+
+        font-size: 12px;
+        line-height: 1.25;
+    }
 }
