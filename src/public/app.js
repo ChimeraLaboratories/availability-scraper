@@ -13,10 +13,11 @@ console.log("LOADED: app.js",);
 const AUTO_REFRESH_INTERVAL = 60 * 1000;
 
 // Change this back to true before pushing to GitHub!!!
-const AUTO_REFRESH_ENABLED = true;
+const AUTO_REFRESH_ENABLED = false;
 
 let isLoading = false;
 let refreshTimer = null;
+let currentDashboardDate = new Date().toDateString();
 
 let previousCategoryState =
     new Map();
@@ -174,15 +175,32 @@ function formatRelativeAppointment(
     return fallbackLabel;
 }
 
-if (availabilityTitleEl) {
+function renderDashboardTitle() {
+    if (!availabilityTitleEl) {
+        return;
+    }
+
     availabilityTitleEl.innerHTML = `
-        Availability List
-        <span class="header-date">
-            ${escapeHtml(
-        formatDashboardDate(),
-    )}
-        </span>
-    `;
+    Availability List
+    <span class="header-date">
+    ${escapeHtml(formatDashboardDate(),)}
+    </span>`;
+}
+
+renderDashboardTitle();
+
+function refreshDashboardDate() {
+    const newDashboardDate = new Date().toDateString();
+
+    if (newDashboardDate === currentDashboardDate) {
+        return;
+    }
+
+    currentDashboardDate = newDashboardDate;
+
+    renderDashboardTitle();
+
+    console.log("[DASHBOARD] Date rollover detected:", currentDashboardDate);
 }
 
 
@@ -618,6 +636,8 @@ function showUpdateSuccess() {
 }
 
 async function loadDashboard() {
+    refreshDashboardDate();
+
     setStatus(
         "Updating...",
         "loading",
