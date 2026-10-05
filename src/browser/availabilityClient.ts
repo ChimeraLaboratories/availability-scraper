@@ -95,6 +95,7 @@ export async function fetchAvailabilityFromPage(
 
     const availableSlots = storeAvailability.availableSlots;
     availableSlots.reduce((total, day) => total + day.appointmentSlots.length, 0);
+
     return availableSlots;
 }
 
