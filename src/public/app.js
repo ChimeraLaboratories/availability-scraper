@@ -203,7 +203,6 @@ function refreshDashboardDate() {
     console.log("[DASHBOARD] Date rollover detected:", currentDashboardDate);
 }
 
-
 function renderNextAvailable(
     nextAvailableOverall,
 ) {
