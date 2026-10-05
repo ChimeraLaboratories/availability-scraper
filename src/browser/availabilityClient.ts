@@ -94,9 +94,7 @@ export async function fetchAvailabilityFromPage(
     }
 
     const availableSlots = storeAvailability.availableSlots;
-
-    const totalSlots = availableSlots.reduce((total, day) => total + day.appointmentSlots.length, 0);
-
+    availableSlots.reduce((total, day) => total + day.appointmentSlots.length, 0);
     return availableSlots;
 }
 
