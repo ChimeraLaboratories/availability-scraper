@@ -201,6 +201,18 @@ function refreshDashboardDate() {
     renderDashboardTitle();
 
     console.log("[DASHBOARD] Date rollover detected:", currentDashboardDate);
+
+    reportDateRollover(new Date().toISOString().sice(0, 10));
+}
+
+function reportDateRollover(date) {
+    fetch("/api/dashboard/date-rollover", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({date})
+    }).catch(error => {
+        console.warn("[DASHBOARD] Failed to report date rollover", error);
+    });
 }
 
 function renderNextAvailable(
