@@ -45,15 +45,6 @@ export async function fetchAvailabilityFromPage(
             request,
         );
 
-    console.log("[Availability] Response",
-        {
-            slotType: request.slotType,
-            lineOfBusiness: request.lineOfBusiness ?? "OPTICAL",
-            status: result.status,
-            ok: result.ok,
-        },
-    );
-
     if (!result.ok) {
         throw new Error(
             `Availability request failed with status ${result.status}: ${result.text}`,
@@ -74,12 +65,6 @@ export async function fetchAvailabilityFromPage(
     }
 
     if (parsed.errors?.length) {
-        console.error("[Availability] GraphQL error", {
-            storeNumber: request.storeNumber,
-            slotType: request.slotType,
-            lineOfBusiness: request.lineOfBusiness ?? "OPTICAL",
-            errors: parsed.errors,
-        });
 
         const message = parsed.errors
             .map((error) => error.message)
@@ -111,17 +96,6 @@ export async function fetchAvailabilityFromPage(
     const availableSlots = storeAvailability.availableSlots;
 
     const totalSlots = availableSlots.reduce((total, day) => total + day.appointmentSlots.length, 0);
-
-    console.log("[Availability] Parsed",
-        {
-            slotType: request.slotType,
-            lineOfBusiness: request.lineOfBusiness ?? "OPTICAL",
-            availabilityDays: availableSlots.length,
-            totalSlots,
-            firstAvailableDate: availableSlots[0]?.date ?? null,
-            firstAvailableTime: availableSlots[0]?.appointmentSlots?.[0]?.startTime ?? null,
-        },
-    );
 
     return availableSlots;
 }
@@ -169,16 +143,6 @@ async function executeAvailabilityRequest(
         isAudiology
             ? audiologyStoreNumber!
             : request.storeNumber;
-
-    console.log("[Availability] Request",
-        {
-            storeNumber,
-            slotType: request.slotType,
-            lineOfBusiness: request.lineOfBusiness ?? "OPTICAL",
-            startDate: request.startDate,
-            maxNumberOfDays: request.maxNumberOfDays ?? 42,
-        },
-    );
 
     const maxEndDate =
         isAudiology

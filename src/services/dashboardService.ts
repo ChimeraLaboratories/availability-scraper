@@ -179,7 +179,7 @@ export async function getDashboardAvailability(
                     );
                 }
 
-                console.error("[Availability] Category failed", {
+                console.error("[AVAILABILITY] Category failed", {
                     category: category.key,
                     lineOfBusiness: category.lineOfBusiness,
                     error: message,
