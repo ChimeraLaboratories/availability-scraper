@@ -1273,4 +1273,25 @@ prefers-reduced-motion:
         font-size: 12px;
         line-height: 1.25;
     }
+
+    /* --------------------------------------------------
+        MOBILE HEADER CONTROL ALIGNMENT
+        AS-99
+    -------------------------------------------------- */
+
+    .topbar-right {
+        display: flex;
+        align-items: center;
+
+        gap: 6px;
+    }
+
+    .status-pill {
+        margin-right: auto;
+    }
+
+    #refreshBtn,
+    .admin-link {
+        flex-shrink: 0;
+    }
 }
