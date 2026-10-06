@@ -1,6 +1,6 @@
 export type SystemAnnouncmentScope = "GLOBAL" | "STORE";
 
-export interface SystemAnnouncment {
+export interface SystemAnnouncement {
     id: string;
     message: string;
     scope: SystemAnnouncmentScope;
@@ -12,4 +12,4 @@ export interface SystemAnnouncment {
     updatedAt: string;
 }
 
-export type SystemAnnouncmentData = SystemAnnouncment[];
+export type SystemAnnouncmentData = SystemAnnouncement[];

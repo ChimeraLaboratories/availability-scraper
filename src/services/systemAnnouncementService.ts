@@ -1,5 +1,5 @@
 import path from "node:path";
-import {SystemAnnouncment, SystemAnnouncmentData} from "../types/systemAnnouncment.js";
+import {SystemAnnouncement, SystemAnnouncmentData} from "../types/systemAnnouncment.js";
 import fs from "node:fs/promises";
 
 const DATA_FILE = path.resolve(process.cwd(), 'data/system-announcements.json');
@@ -48,4 +48,84 @@ export async function getActiveSystemAnnouncements(storeNumber?: string): Promis
 
         return true;
     });
+}
+
+export async function createSystemAnnouncement(input: { message: string; scope: SystemAnnouncement["scope"]; storeNumber: string | null; enabled: boolean; startsAt: string | null; endsAt: string | null; }): Promise<SystemAnnouncement> {
+    const announcements = await getSystemAnnouncements();
+
+    const now = new Date().toISOString();
+
+    const announcement: SystemAnnouncement = {
+        id: crypto.randomUUID(),
+        message: input.message,
+        scope: input.scope,
+        storeNumber: input.storeNumber,
+        enabled: input.enabled,
+        startsAt: input.startsAt,
+        endsAt: input.endsAt,
+        createdAt: now,
+        updatedAt: now,
+    };
+
+    announcements.push(announcement);
+
+    await saveSystemAnnouncements(announcements);
+
+    return announcement;
+}
+
+export async function updateSystemAnnouncement(id: string, updates: Partial<Pick<SystemAnnouncement, | "message" | "scope" | "storeNumber" | "enabled" | "startsAt" | "endsAt">>,): Promise<SystemAnnouncement | null> {
+    const announcements = await getSystemAnnouncements();
+
+    const index = announcements.findIndex((announcement) => announcement.id === id,);
+
+    if (index === -1) {
+        return null;
+    }
+
+    const updated: SystemAnnouncement = {
+        ...announcements[index],
+        ...updates,
+        updatedAt: new Date().toISOString(),
+    };
+
+    if (
+        updated.scope === "STORE" &&
+        !updated.storeNumber
+    ) {
+        throw new Error(
+            "Store number is required for STORE announcements.",
+        );
+    }
+
+    if (
+        updated.startsAt &&
+        updated.endsAt &&
+        Date.parse(updated.endsAt) <=
+        Date.parse(updated.startsAt)
+    ) {
+        throw new Error(
+            "End date must be after start date.",
+        );
+    }
+
+    announcements[index] = updated;
+
+    await saveSystemAnnouncements(announcements,);
+
+    return updated;
+}
+
+export async function deleteSystemAnnouncement(id: string,): Promise<boolean> {
+    const announcements = await getSystemAnnouncements();
+
+    const remaining = announcements.filter((announcement) => announcement.id !== id,);
+
+    if (remaining.length === announcements.length) {
+        return false;
+    }
+
+    await saveSystemAnnouncements(remaining,);
+
+    return true;
 }

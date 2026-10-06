@@ -23,7 +23,7 @@ import {manualAvailabilityRouter} from "./routes/manualAvailabilityRoutes.js";
 import {adminAuthRouter} from "./auth/adminAuthRoutes.js";
 import {requireAdminSession} from "./middleware/requireAdminSession.js";
 import pushRoutes from "./routes/pushRoutes.js";
-import {systemAnnouncementRouter} from "./routes/systemAnnouncementRoute.js";
+import {systemAnnouncementRouter} from "./routes/systemAnnouncementRoutes.js";
 
 export const app = express();
 
