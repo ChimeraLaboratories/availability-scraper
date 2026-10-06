@@ -44,6 +44,14 @@ const pushNotificationMessage = document.getElementById("pushNotificationMessage
 
 const testPushNotificationButton = document.getElementById("testPushNotificationButton");
 
+const announcementForm = document.getElementById("announcementForm");
+const announcementMessage = document.getElementById("announcementMessage");
+const clearAnnouncementButton = document.getElementById("clearAnnouncementButton");
+const saveAnnouncementButton = document.getElementById("saveAnnouncementButton");
+const announcementStatus = document.getElementById("announcementStatus");
+
+let currentAnnouncement = null;
+
 const MANUAL_KEYS = new Set(["mecs", "ground-floor"]);
 let browserStatusTimer = null;
 
@@ -285,6 +293,7 @@ function showAdmin() {
         loadManualAvailability(),
         loadDiagnostics(),
         loadPushNotificationStatus(),
+        loadSystemAnnouncement(),
     ]);
 }
 
@@ -544,6 +553,203 @@ async function loadDiagnostics() {
         sessionStorageValue.textContent = "Unavailable";
         setBadge(totpConfigBadge, "Error", "danger");
         setBadge(browserDebugBadge, "Error", "danger");
+    }
+}
+
+async function loadSystemAnnouncement() {
+    clearMessage(announcementStatus);
+
+    try {
+        const response = await apiFetch("/api/admin/system-announcements");
+        const data = await response.json();
+
+        if (!response.ok || data.ok !== true || !Array.isArray(data.announcements)) {
+            throw new Error(data.error ?? "Unable to load system announcement.");
+        }
+
+        currentAnnouncement = data.announcements.find((announcement) => announcement.scope === "GLOBAL" && announcement.enabled === true) ?? null;
+
+        announcementMessage.value = currentAnnouncement.message ?? "";
+
+        clearAnnouncementButton.disabled = currentAnnouncement === null;
+    } catch (error) {
+        if (error instanceof Error && error.message === "Authentication required.") {
+            return;
+        }
+
+        console.error("Unable to load system announcement:", error);
+
+        setMessage(announcementStatus, error instanceof Error ? error.message : "Unable to load system announcement.", "error");
+    }
+}
+
+async function saveSystemAnnouncement() {
+    const message =
+        announcementMessage.value.trim();
+
+    if (!message) {
+        setMessage(
+            announcementStatus,
+            "Enter an announcement message.",
+            "error",
+        );
+        return;
+    }
+
+    const originalText =
+        saveAnnouncementButton.textContent;
+
+    saveAnnouncementButton.disabled = true;
+    saveAnnouncementButton.textContent = "Saving...";
+    clearMessage(announcementStatus);
+
+    try {
+        const existing =
+            currentAnnouncement !== null;
+
+        const response = await apiFetch(
+            existing
+                ? "/api/admin/system-announcements"
+                : "/api/admin/system-announcements",
+            {
+                method: existing ? "PUT" : "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(
+                    existing
+                        ? {
+                            id: currentAnnouncement.id,
+                            message,
+                            enabled: true,
+                        }
+                        : {
+                            message,
+                            scope: "GLOBAL",
+                            storeNumber: null,
+                            enabled: true,
+                            startsAt: null,
+                            endsAt: null,
+                        },
+                ),
+            },
+        );
+
+        const data =
+            await response.json();
+
+        if (
+            !response.ok ||
+            data.ok !== true
+        ) {
+            throw new Error(
+                data.error ??
+                "Unable to save system announcement.",
+            );
+        }
+
+        currentAnnouncement =
+            data.announcement;
+
+        announcementMessage.value =
+            currentAnnouncement.message;
+
+        clearAnnouncementButton.disabled =
+            false;
+
+        setMessage(
+            announcementStatus,
+            "Dashboard announcement saved.",
+            "success",
+        );
+    } catch (error) {
+        console.error(
+            "Unable to save system announcement:",
+            error,
+        );
+
+        setMessage(
+            announcementStatus,
+            error instanceof Error
+                ? error.message
+                : "Unable to save system announcement.",
+            "error",
+        );
+    } finally {
+        saveAnnouncementButton.disabled =
+            false;
+
+        saveAnnouncementButton.textContent =
+            originalText;
+    }
+}
+
+async function clearSystemAnnouncement() {
+    if (!currentAnnouncement) {
+        return;
+    }
+
+    const originalText =
+        clearAnnouncementButton.textContent;
+
+    clearAnnouncementButton.disabled = true;
+    clearAnnouncementButton.textContent = "Clearing...";
+    clearMessage(announcementStatus);
+
+    try {
+        const response = await apiFetch(
+            "/api/admin/system-announcements",
+            {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    id: currentAnnouncement.id,
+                }),
+            },
+        );
+
+        const data =
+            await response.json();
+
+        if (
+            !response.ok ||
+            data.ok !== true
+        ) {
+            throw new Error(
+                data.error ??
+                "Unable to clear system announcement.",
+            );
+        }
+
+        currentAnnouncement = null;
+        announcementMessage.value = "";
+
+        setMessage(
+            announcementStatus,
+            "Dashboard announcement cleared.",
+            "success",
+        );
+    } catch (error) {
+        console.error(
+            "Unable to clear system announcement:",
+            error,
+        );
+
+        setMessage(
+            announcementStatus,
+            error instanceof Error
+                ? error.message
+                : "Unable to clear system announcement.",
+            "error",
+        );
+    } finally {
+        clearAnnouncementButton.disabled =
+            currentAnnouncement === null;
+
+        clearAnnouncementButton.textContent =
+            originalText;
     }
 }
 
@@ -823,5 +1029,20 @@ enablePushNotificationsButton.addEventListener("click", () => {
 testPushNotificationButton.addEventListener("click", () => {
     void sendTestPushNotification();
 });
+
+announcementForm.addEventListener(
+    "submit",
+    (event) => {
+        event.preventDefault();
+        void saveSystemAnnouncement();
+    },
+);
+
+clearAnnouncementButton.addEventListener(
+    "click",
+    () => {
+        void clearSystemAnnouncement();
+    },
+);
 
 checkSession();

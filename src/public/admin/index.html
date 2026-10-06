@@ -173,6 +173,31 @@
 
           <div id="manualAvailabilityGrid" class="manual-grid hidden"></div>
         </section>
+
+        <section class="section">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">System announcement</p>
+              <h2>Dashboard message</h2>
+              <p>Show an operational message at the top of the public dashboard.</p>
+            </div>
+          </div>
+
+          <form id="announcementForm">
+            <div class="field">
+              <label for="announcementMessage">Message</label>
+              <input id="announcementMessage" type="text" placeholder="Enter a message for the dashboard" autocomplete="off">
+            </div>
+
+            <div class="manual-actions">
+              <button id="clearAnnouncementButton" class="secondary-button" type="button">Clear</button>
+              <button id="saveAnnouncementButton" type="submit">Save announcement</button>
+            </div>
+
+            <p id="announcementStatus" class="message hidden" role="status"></p>
+          </form>
+        </section>
+
         <section class="section">
           <div class="section-heading">
             <div>
