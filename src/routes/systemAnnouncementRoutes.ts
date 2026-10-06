@@ -4,7 +4,7 @@ import { requireAdminSession } from "../middleware/requireAdminSession.js";
 
 import {
     createSystemAnnouncement, deleteSystemAnnouncement,
-    getActiveSystemAnnouncements,
+    getActiveSystemAnnouncements, getSystemAnnouncements,
     updateSystemAnnouncement,
 } from "../services/systemAnnouncementService.js";
 
@@ -24,6 +24,20 @@ systemAnnouncementRouter.get(
             await getActiveSystemAnnouncements(
                 storeNumber,
             );
+
+        return res.json({
+            ok: true,
+            announcements,
+        });
+    }),
+);
+
+systemAnnouncementRouter.get(
+    "/admin/system-announcements",
+    requireAdminSession,
+    asyncRoute(async (_req, res) => {
+        const announcements =
+            await getSystemAnnouncements();
 
         return res.json({
             ok: true,
