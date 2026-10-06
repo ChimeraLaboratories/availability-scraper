@@ -609,7 +609,7 @@ async function saveSystemAnnouncement() {
 
         const response = await apiFetch(
             existing
-                ? "/api/admin/system-announcements"
+                ? `/api/admin/system-announcements/${currentAnnouncement.id}`
                 : "/api/admin/system-announcements",
             {
                 method: existing ? "PUT" : "POST",
@@ -698,7 +698,7 @@ async function clearSystemAnnouncement() {
 
     try {
         const response = await apiFetch(
-            "/api/admin/system-announcements",
+            `/api/admin/system-announcements/${currentAnnouncement.id}`,
             {
                 method: "DELETE",
                 headers: {

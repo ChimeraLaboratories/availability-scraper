@@ -8,12 +8,16 @@ const refreshBtn = document.getElementById("refreshBtn");
 
 const availabilityTitleEl = document.getElementById("availabilityTitle");
 
+const systemAnnouncement = document.getElementById("systemAnnouncement");
+
+const systemAnnouncementMessage = document.getElementById("systemAnnouncementMessage");
+
 console.log("LOADED: app.js",);
 
 const AUTO_REFRESH_INTERVAL = 60 * 1000;
 
 // Change this back to true before pushing to GitHub!!!
-const AUTO_REFRESH_ENABLED = false;
+const AUTO_REFRESH_ENABLED = true;
 
 let isLoading = false;
 let refreshTimer = null;
@@ -646,6 +650,46 @@ function showUpdateSuccess() {
     }, 1200);
 }
 
+async function loadSystemAnnouncements() {
+    try {
+        const response =
+            await fetch("/api/system-announcements");
+
+        const data =
+            await response.json();
+
+        if (
+            !response.ok ||
+            data.ok !== true ||
+            !Array.isArray(data.announcements)
+        ) {
+            throw new Error(
+                data.error ??
+                "Unable to load system announcements.",
+            );
+        }
+
+        const announcement =
+            data.announcements[0] ?? null;
+
+        if (!announcement) {
+            systemAnnouncementMessage.textContent = "";
+            systemAnnouncement.classList.add("hidden");
+            return;
+        }
+
+        systemAnnouncementMessage.textContent =
+            announcement.message;
+
+        systemAnnouncement.classList.remove("hidden");
+    } catch (error) {
+        console.error(
+            "Unable to load system announcements:",
+            error,
+        );
+    }
+}
+
 async function loadDashboard() {
     refreshDashboardDate();
 
@@ -805,3 +849,11 @@ async function registerServiceWorker() {
 }
 
 void registerServiceWorker();
+void loadSystemAnnouncements();
+
+setInterval(
+    () => {
+        void loadSystemAnnouncements();
+    },
+    30_000,
+);
