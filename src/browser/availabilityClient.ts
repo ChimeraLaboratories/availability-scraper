@@ -99,24 +99,6 @@ export async function fetchAvailabilityFromPage(
     return availableSlots;
 }
 
-function addDays(
-    dateString: string,
-    days: number,
-): string {
-    const date =
-        new Date(
-            `${dateString}T00:00:00Z`,
-        );
-
-    date.setUTCDate(
-        date.getUTCDate() + days,
-    );
-
-    return date
-        .toISOString()
-        .slice(0, 10);
-}
-
 async function executeAvailabilityRequest(
     page: Page,
     request: AvailabilityRequest,
@@ -143,20 +125,11 @@ async function executeAvailabilityRequest(
             ? audiologyStoreNumber!
             : request.storeNumber;
 
-    const maxEndDate =
-        isAudiology
-            ? addDays(
-                request.startDate,
-                30,
-            )
-            : null;
-
     return page.evaluate(
         async ({
                    payload,
                    storeNumber,
                    isAudiology,
-                   maxEndDate,
                }) => {
             const query = `
                 query GetAvailableAppointmentSlots(
@@ -188,28 +161,18 @@ async function executeAvailabilityRequest(
                 }
             `;
 
-            const slotsQuery =
-                isAudiology
-                    ? {
-                        maxEndDate,
-                        maxNumberOfDays: 1,
-                        slotType:
-                        payload.slotType,
-                        startDate:
-                        payload.startDate,
-                    }
-                    : {
-                        maxNumberOfDays:
-                            payload
-                                .maxNumberOfDays ??
-                            42,
-
-                        slotType:
-                        payload.slotType,
-
-                        startDate:
-                        payload.startDate,
-                    };
+            const slotsQuery = isAudiology
+                ?{
+                //Main Audiology store requests use this shape; maxEndDate is only used for alternative-store searches.
+                    maxNumberOfDays: payload.maxNumberOfDays ?? 60,
+                    slotType: payload.slotType,
+                    startDate: payload.startDate,
+                }
+                :{
+                    maxNumberOfDays: payload.maxNumberOfDays ?? 42,
+                    slotType: payload.slotType,
+                    startDate: payload.startDate,
+                };
 
             const response =
                 await fetch(
@@ -276,7 +239,6 @@ async function executeAvailabilityRequest(
             payload: request,
             storeNumber,
             isAudiology,
-            maxEndDate,
         },
     );
 }

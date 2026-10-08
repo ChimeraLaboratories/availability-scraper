@@ -3,6 +3,7 @@ import {
 } from "../config/categories.js";
 
 import type {
+    DashboardCategory,
     DashboardCategoryResult,
     DashboardResponse,
 } from "../types/dashboard.js";
@@ -37,18 +38,57 @@ import {
 } from "./dashboardCacheService.js";
 import {recordAvailabilityFailure, recordAvailabilitySuccess} from "../notifications/availabilityAlertService.js";
 import {sendDeveloperNotification} from "../notifications/developerNotificationService.js";
+import {AvailabilityDay} from "../types/availability.js";
 
-export async function getDashboardAvailability(
-    storeNumber: string,
-    startDate: string,
-): Promise<DashboardResponse> {
-    let results:
-        DashboardCategoryResult[] = [];
+async function fetchCategoryAvailability(storeNumber: string, startDate: string, category: DashboardCategory): Promise<AvailabilityDay[]> {
+    const slotTypes = category.slotTypes??[category.slotType];
+    const merged = new Map<string, AvailabilityDay>();
+
+    // Sequential requests reduce unnecessary bursts against the upstream booking service.
+    for(const slotType of slotTypes) {
+        const days = await fetchAvailabilityInBrowser({
+            storeNumber,
+            slotType,
+            startDate,
+            maxNumberOfDays: category.lineOfBusiness === "AUDIOLOGY" ? 60 : 42,
+            lineOfBusiness: category.lineOfBusiness,
+        });
+
+        for (const day of days) {
+            const existing = merged.get(day.date);
+            const slots = [...(existing?.appointmentSlots??[])];
+            const seen = new Set(slots.map(slot => `${slot.id}|${slot.startTime}|${slot.endTime}`));
+
+            for (const slot of day.appointmentSlots) {
+                const key = `${slot.id}|${slot.startTime}|${slot.endTime}`;
+
+                if (seen.has(key)) {
+                    continue;
+                }
+
+                slots.push(slot);
+                seen.add(key);
+            }
+
+            slots.sort((a,b) => a.startTime.localeCompare(b.startTime));
+
+            merged.set(day.date, {
+                ...day,
+                count: slots.length,
+                appointmentSlots: slots,
+            });
+        }
+    }
+
+    return [...merged.values()].sort((a,b) => a.date.localeCompare(b.date));
+}
+
+export async function getDashboardAvailability(storeNumber: string, startDate: string,): Promise<DashboardResponse> {
+    let results: DashboardCategoryResult[] = [];
 
     let lastUpdatedAt: string | null = null;
 
-    const schedule =
-        getScraperScheduleStatus();
+    const schedule = getScraperScheduleStatus();
 
     /*
      * LIVE AVAILABILITY
@@ -59,92 +99,36 @@ export async function getDashboardAvailability(
     if (schedule.active) {
         for (const category of dashboardCategories) {
             try {
-                const raw =
-                    await fetchAvailabilityInBrowser(
-                        {
-                            storeNumber,
+                const raw = await fetchCategoryAvailability(storeNumber, startDate, category);
 
-                            slotType:
-                            category.slotType,
+                const filtered = filterAvailability(raw, category.filters,);
 
-                            startDate,
+                const firstDay = filtered[0] ?? null;
 
-                            maxNumberOfDays:
-                                42,
-
-                            lineOfBusiness:
-                            category.lineOfBusiness,
-                        },
-                    );
-
-                const filtered =
-                    filterAvailability(
-                        raw,
-                        category.filters,
-                    );
-
-                const firstDay =
-                    filtered[0] ??
-                    null;
-
-                const firstSlot =
-                    firstDay
-                        ?.appointmentSlots
-                        ?.[0] ??
-                    null;
+                const firstSlot = firstDay?.appointmentSlots?.[0] ?? null;
 
                 results.push({
-                    key:
-                    category.key,
+                    key: category.key,
 
-                    label:
-                    category.label,
+                    label: category.label,
 
-                    lineOfBusiness:
-                    category.lineOfBusiness,
+                    lineOfBusiness: category.lineOfBusiness,
 
-                    slotType:
-                    category.slotType,
+                    slotType: category.slotType,
 
-                    filters:
-                    category.filters,
+                    filters: category.filters,
 
-                    nextAvailableDate:
-                        firstDay?.date ??
-                        null,
+                    nextAvailableDate: firstDay?.date ?? null,
 
-                    nextAvailableTime:
-                        firstSlot
-                            ?.startTime ??
-                        null,
+                    nextAvailableTime: firstSlot?.startTime ?? null,
 
-                    nextAvailableLabel:
-                        firstDay?.date &&
-                        firstSlot?.startTime
-                            ? formatDateTime(
-                                firstDay.date,
-                                firstSlot.startTime,
-                            )
-                            : null,
+                    nextAvailableLabel: firstDay?.date && firstSlot?.startTime ? formatDateTime(firstDay.date, firstSlot.startTime,) : null,
 
-                    totalDays:
-                    filtered.length,
+                    totalDays: filtered.length,
 
-                    totalSlots:
-                        filtered.reduce(
-                            (
-                                sum,
-                                day,
-                            ) =>
-                                sum +
-                                day
-                                    .appointmentSlots
-                                    .length,
-                            0,
-                        ),
+                    totalSlots: filtered.reduce((sum, day,) => sum + day.appointmentSlots.length, 0,),
 
-                    days:
-                    filtered,
+                    days: filtered,
                 });
 
                 const recovery = recordAvailabilitySuccess(category.key);
@@ -231,9 +215,7 @@ export async function getDashboardAvailability(
          * NOT stored in this cache because they
          * have their own persistent storage.
          */
-        await saveDashboardCache(
-            results,
-        );
+        await saveDashboardCache(results,);
 
         lastUpdatedAt = new Date().toISOString();
 
@@ -246,12 +228,10 @@ export async function getDashboardAvailability(
          * availability instead.
          */
 
-        const cache =
-            await getDashboardCache();
+        const cache = await getDashboardCache();
 
         if (cache) {
-            results =
-                cache.categories;
+            results = cache.categories;
 
             lastUpdatedAt = cache.updatedAt;
         }
@@ -263,65 +243,31 @@ export async function getDashboardAvailability(
      * These are always loaded, regardless of
      * whether automatic scraping is active.
      */
-    const manualCategories =
-        await getManualCategoriesWithValues();
+    const manualCategories = await getManualCategoriesWithValues();
 
-    for (
-        const category of
-        manualCategories
-        ) {
+    for (const category of manualCategories) {
         results.push({
-            key:
-            category.key,
+            key: category.key,
 
-            label:
-            category.label,
+            label: category.label,
 
-            lineOfBusiness:
-                "MANUAL",
+            lineOfBusiness: "MANUAL",
 
-            slotType:
-                "MANUAL",
+            slotType: "MANUAL",
 
-            filters:
-                {},
+            filters: {},
 
-            nextAvailableDate:
-            category
-                .nextAvailableDate,
+            nextAvailableDate: category.nextAvailableDate,
 
-            nextAvailableTime:
-            category
-                .nextAvailableTime,
+            nextAvailableTime: category.nextAvailableTime,
 
-            nextAvailableLabel:
-                category
-                    .nextAvailableDate &&
-                category
-                    .nextAvailableTime
-                    ? formatDateTime(
-                        category
-                            .nextAvailableDate,
+            nextAvailableLabel: category.nextAvailableDate && category.nextAvailableTime ? formatDateTime(category.nextAvailableDate, category.nextAvailableTime,) : null,
 
-                        category
-                            .nextAvailableTime,
-                    )
-                    : null,
+            totalDays: category.nextAvailableDate ? 1 : 0,
 
-            totalDays:
-                category
-                    .nextAvailableDate
-                    ? 1
-                    : 0,
+            totalSlots: category.nextAvailableDate ? 1 : 0,
 
-            totalSlots:
-                category
-                    .nextAvailableDate
-                    ? 1
-                    : 0,
-
-            days:
-                [],
+            days: [],
         });
     }
 
