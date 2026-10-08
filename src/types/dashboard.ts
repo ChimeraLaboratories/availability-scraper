@@ -15,6 +15,8 @@ export interface DashboardCategory {
     label: string;
     lineOfBusiness: LineOfBusiness;
     slotType: string;
+    // Used when one dashboard row represents multiple upstream slot types.
+    slotTypes?:string[];
     filters: AvailabilityFilters;
 }
 

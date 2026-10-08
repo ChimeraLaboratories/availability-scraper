@@ -70,7 +70,13 @@ export const dashboardCategories: DashboardCategory[] = [
         key: "hearing-appointment",
         label: "Hearing Appointment (Test/Repair/etc)",
         lineOfBusiness: "AUDIOLOGY",
-        slotType: "HEARING_AID_MAINTENANCE_OR_REPAIR",
+        slotType: "HEARING_APPOINTMENT",
+        // Keep the supported set explicit so new Audiology services are not included automatically.
+        slotTypes: [
+            "HEARING_TEST",
+            "HEARING_AID_CHECK_UP",
+            "HEARING_PROTECTION_CONSULTATION",
+        ],
         filters: {},
     },
 ];
